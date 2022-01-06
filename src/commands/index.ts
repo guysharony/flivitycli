@@ -22,28 +22,28 @@ export const create = async (key: string) => {
 		return;
 	}
 
-	const { name, params, options=[], description, action }: CommandDefinition = command;
+	const { name, options, description, action }: CommandDefinition = command;
 
-	const current = program.command(`${name}${params ? ` ${params}` : ''}`);
+	const current = program.command(`${name}`);
 
-	options.map(({ flags, description, defaultValue = null, required = false }) => {
-		if (!defaultValue) {
-			if (required) return current.requiredOption(flags, description);
+	if (options) {
+		options.map(({ flags, description, defaultValue = null, required = false }) => {
+			if (!defaultValue) {
+				if (required) return current.requiredOption(flags, description);
 
-			return current.option(flags, description);
-		}
+				return current.option(flags, description);
+			}
 
-		if (required) {
-			throw new Error("A required option can't have a default value.");
-		}
+			if (required) {
+				throw new Error("A required option can't have a default value.");
+			}
 
-		return current.option(flags, description, defaultValue);
-	});
+			return current.option(flags, description, defaultValue);
+		});
+	}
 
 	current.description(description);
-	current.action(() => {
-		action(current);
-	});
+	current.action(() => action(current));
 }
 
 export const name = (params: string) => {
@@ -54,10 +54,10 @@ export const usage = (params: string) => {
 	program.usage(params);
 }
 
-export const execute = (callback?: (arg1: CommanderError) => void) => {
+export const execute = () => {
 	program.configureOutput({
-		writeOut: (str) => process.stdout.write(`[OUT] ${str}`),
-		writeErr: (str) => process.stdout.write(`[ERR] ${str}`),
+		writeOut: (str) => process.stdout.write(`${str}`),
+		writeErr: (str) => process.stdout.write(`${str}`),
 		outputError: (str) => {
 			if (program.args.length) {
 				console.log(str.replace("error: ", "flivitycli: "));

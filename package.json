@@ -19,7 +19,10 @@
 	"author": "Your Name",
 	"license": "ISC",
 	"devDependencies": {
+		"@types/async": "^3.2.12",
+		"@types/fs-extra": "^9.0.13",
 		"@types/node": "^17.0.8",
+		"@types/serialize-javascript": "^5.0.2",
 		"pkg": "^5.5.1",
 		"typescript": "^4.5.4"
 	},
@@ -27,6 +30,12 @@
 		"scripts": "build/**/*.js"
 	},
 	"dependencies": {
-		"commander": "^8.3.0"
+		"async": "^3.2.2",
+		"aws-sdk": "^2.1051.0",
+		"commander": "^8.3.0",
+		"fs": "^0.0.1-security",
+		"fs-extra": "^10.0.0",
+		"serialize-javascript": "^6.0.0",
+		"util": "^0.12.4"
 	}
 }

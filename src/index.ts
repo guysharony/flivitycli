@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 
-import { CommanderError } from 'commander';
 import * as commands from './commands/index';
-import { program } from './libs/commands';
 
 
 async function app(): Promise<void> {
 	commands.name("flivitycli");
 
 	await commands.create('auth');
+	await commands.create('test');
 
-	commands.execute((param: CommanderError) => {
-	});
+	commands.execute();
 }
 
 app();

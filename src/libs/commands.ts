@@ -3,20 +3,20 @@ import { Command } from 'commander';
 
 export const program = new Command();
 
-export interface Option {
+export interface CommandOption {
     flags: string;
     description: string;
-    defaultValue?: undefined;
+    defaultValue?: string;
 	required?: boolean;
-	type: 'string' | 'number' | 'boolean'
+	type?: 'string' | 'number' | 'boolean'
 }
 
-export type Options = Option[];
+export type CommandOptions = CommandOption[];
 
 export interface CommandDefinition {
 	name: string;
 	params: string;
-	options: Options;
+	options?: CommandOptions;
 	description: string;
 	action: (arg: Command) => Promise<void>;
 };

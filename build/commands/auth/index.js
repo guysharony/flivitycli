@@ -1,23 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.action = exports.description = exports.options = exports.params = exports.name = void 0;
+exports.action = exports.description = exports.options = exports.name = void 0;
 exports.name = 'auth';
-exports.params = '[options]';
 exports.options = [
     {
-        flags: '-l, --login <login>',
-        description: 'Amazon user login.',
-        type: 'string',
+        flags: '-l, --login <string>',
+        description: 'aws user login',
         required: true
     },
     {
-        flags: '-p, --password <password>',
-        description: 'Amazon user password.'
+        flags: '-p, --password <string>',
+        description: 'aws user password'
     }
 ];
-exports.description = 'Authenticating to Amazon account.';
+exports.description = 'Authenticating to aws account.';
 const action = (params) => {
     const currentOptions = params.opts();
-    console.log(currentOptions);
 };
 exports.action = action;
+//# sourceMappingURL=index.js.map

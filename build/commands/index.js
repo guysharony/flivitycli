@@ -19,25 +19,23 @@ const create = async (key) => {
         console.log(`See 'flivitycli --help'`);
         return;
     }
-    const { name, params, options = [], description, action } = command;
-    const current = commands_1.program.command(`${name}${params ? ` ${params}` : ''}`);
-    options.map(({ flags, description, defaultValue = null, required = false }) => {
-        if (!defaultValue) {
-            if (required)
-                return current.requiredOption(flags, description);
-            return current.option(flags, description);
-        }
-        if (required) {
-            throw new Error("A required option can't have a default value.");
-        }
-        return current.option(flags, description, defaultValue);
-    });
+    const { name, options, description, action } = command;
+    const current = commands_1.program.command(`${name}`);
+    if (options) {
+        options.map(({ flags, description, defaultValue = null, required = false }) => {
+            if (!defaultValue) {
+                if (required)
+                    return current.requiredOption(flags, description);
+                return current.option(flags, description);
+            }
+            if (required) {
+                throw new Error("A required option can't have a default value.");
+            }
+            return current.option(flags, description, defaultValue);
+        });
+    }
     current.description(description);
-    current.action(() => {
-        const currentOptions = commands_1.program.opts();
-        console.log(current, currentOptions);
-        action(current);
-    });
+    current.action(() => action(current));
 };
 exports.create = create;
 const name = (params) => {
@@ -48,10 +46,10 @@ const usage = (params) => {
     commands_1.program.usage(params);
 };
 exports.usage = usage;
-const execute = (callback) => {
+const execute = () => {
     commands_1.program.configureOutput({
-        writeOut: (str) => process.stdout.write(`[OUT] ${str}`),
-        writeErr: (str) => process.stdout.write(`[ERR] ${str}`),
+        writeOut: (str) => process.stdout.write(`${str}`),
+        writeErr: (str) => process.stdout.write(`${str}`),
         outputError: (str) => {
             if (commands_1.program.args.length) {
                 console.log(str.replace("error: ", "flivitycli: "));
@@ -62,3 +60,4 @@ const execute = (callback) => {
     commands_1.program.parse(process.argv);
 };
 exports.execute = execute;
+//# sourceMappingURL=index.js.map
