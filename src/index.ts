@@ -7,7 +7,7 @@ async function app(): Promise<void> {
 	commands.name("flivitycli");
 
 	await commands.create('auth');
-	await commands.create('test');
+	await commands.create('build');
 
 	commands.execute();
 }

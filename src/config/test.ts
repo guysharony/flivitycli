@@ -1,34 +1,14 @@
-interface ConfigProperties {
+interface PropertiesConfig {
 	[x: string]: any;
 }
 
-interface Config {
+export interface ProfileConfig {
 	name: string;
-	properties: ConfigProperties
+	properties: PropertiesConfig
 }
 
-type Configs = Config[];
-
-
-let configs: Configs = [
-	{
-		name: 'dev',
-		properties: {
-			host: 'https://localhost'
-		}
-	},
-	{
-		name: 'prod',
-		properties: {
-			host: 'https://flivity.com'
-		}
-	}
-];
-
-export const find = (name: string) => {
-	const config = configs.filter(config => config.name == name);
-
-	if (!config.length) return (null);
-
-	return (config[0]);
+export interface TestConfig {
+	inputDir: string;
+	outputDir?: string;
+	profiles?: ProfileConfig[]
 }

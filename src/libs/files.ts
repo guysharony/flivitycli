@@ -11,7 +11,7 @@ interface Vars {
 
 export const readFile = util.promisify(fs.readFile);
 
-export const replaceVars = async (dir: string, vars: Vars) => {
+export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 	const manage = async (baseDir: string) => {
 		const files = fs.readdirSync(baseDir);
 
@@ -29,13 +29,25 @@ export const replaceVars = async (dir: string, vars: Vars) => {
 				await Promise.all(Object.entries(vars).map(async ([key, value]) => {
 					value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
 
-					data = data.replace(new RegExp(`{{${key.toLowerCase()}}}`, 'g'), value);
+					data = data.replace(new RegExp(`%_${key.toUpperCase()}_%`, 'g'), value);
 				}));
 
-				console.log(data);
+				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
+
+				fs.mkdir(path.dirname(destDir), { recursive: true }, function (err) {
+					if (err) return null;
+
+					fs.writeFileSync(destDir, data);
+				});
 			}
 		}
 	};
 
-	await manage(dir);
+	await manage(src);
+}
+
+export const readJson = (dir: string) => {
+	const data = fs.readFileSync(dir, 'utf-8');
+
+	return JSON.parse(data);
 }

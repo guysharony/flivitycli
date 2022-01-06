@@ -18,9 +18,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.action = exports.description = exports.options = exports.name = void 0;
-const testConfig = __importStar(require("../../config/test"));
+const path_1 = __importDefault(require("path"));
 const files = __importStar(require("../../libs/files"));
 exports.name = 'test';
 exports.options = [
@@ -42,14 +45,14 @@ exports.options = [
 exports.description = 'Run project for testing purpose.';
 const action = (params) => {
     const currentOptions = params.opts();
-    const profile = testConfig.find(currentOptions.profile);
-    if (!profile) {
+    let { inputDir = './src', outputDir = './build', profiles = [] } = files.readJson(path_1.default.join(currentOptions.target, 'flvconfig.json'));
+    inputDir = path_1.default.join(currentOptions.target, inputDir);
+    outputDir = path_1.default.join(currentOptions.target, outputDir);
+    const profile = profiles.filter(profiles_iterator => profiles_iterator.name == currentOptions.profile);
+    if (!profile.length) {
         return (null);
     }
-    console.log(profile.properties.host);
-    files.replaceVars(currentOptions.target, {
-        host: profile.properties.host
-    });
+    files.replaceVars(inputDir, outputDir, profile[0].properties);
 };
 exports.action = action;
 //# sourceMappingURL=index.js.map
