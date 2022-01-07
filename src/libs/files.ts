@@ -22,7 +22,7 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 			if (fullPathType.isDirectory()) {
 				manage(fullPath);
 			}
-			
+
 			if (fullPathType.isFile()) {
 				let data = fse.readFileSync(fullPath, 'utf-8');
 
@@ -44,10 +44,4 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 	};
 
 	await manage(src);
-}
-
-export const readJson = (dir: string) => {
-	const data = fs.readFileSync(dir, 'utf-8');
-
-	return JSON.parse(data);
 }

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.readJson = exports.replaceVars = exports.readFile = void 0;
+exports.replaceVars = exports.readFile = void 0;
 const fs_1 = __importDefault(require("fs"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const path_1 = __importDefault(require("path"));
@@ -37,9 +37,4 @@ const replaceVars = async (src, dest, vars) => {
     await manage(src);
 };
 exports.replaceVars = replaceVars;
-const readJson = (dir) => {
-    const data = fs_1.default.readFileSync(dir, 'utf-8');
-    return JSON.parse(data);
-};
-exports.readJson = readJson;
 //# sourceMappingURL=files.js.map
