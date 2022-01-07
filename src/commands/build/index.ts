@@ -1,11 +1,7 @@
-import fs from 'fs';
 import { Command } from 'commander';
 
 import { CommandOptions } from '../../libs/commands';
-import { TestConfig } from '../../config/test';
-import * as files from '../../libs/files';
-import * as config from '../../libs/config';
-import path from 'path';
+import * as project from '../../libs/project';
 
 
 export const name = 'build';
@@ -32,23 +28,7 @@ export const description = 'Run project for testing purpose.';
 export const action = (params: Command) => {
 	const currentOptions = params.opts();
 
-	const configuration = config.parse(path.join(currentOptions.target, '.flv', 'config.json'));
+	const configuration = project.load(currentOptions.target);
 
-	fs.writeFileSync(path.join(currentOptions.target, '.flv', 'compiled.json'), JSON.stringify(configuration));
-
-	/*
-
-	let { inputDir = './src', outputDir = './build', profiles = [] }: TestConfig = files.readJson(path.join(currentOptions.target, 'flvconfig.json'));
-	inputDir = path.join(currentOptions.target, inputDir);
-	outputDir = path.join(currentOptions.target, outputDir);
-
-	const profile = profiles.filter(profiles_iterator => profiles_iterator.name == currentOptions.profile);
-
-	if (!profile.length) {
-		return (null);
-	}
-
-	files.replaceVars(inputDir, outputDir, profile[0].properties)
-
-	*/
+	configuration.profile.apply(currentOptions.profile);
 };

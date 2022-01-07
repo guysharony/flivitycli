@@ -37,8 +37,14 @@ const parse = (src) => {
         return (0, exports.readJson)(content, function (key, value) {
             if (typeof value == "object" && ('#__import' in value)) {
                 if (typeof value['#__import'] == "string") {
-                    console.log(key);
-                    return (__base(path_1.default.join(dirname, value['#__import'])));
+                    const imported = __base(path_1.default.join(dirname, value['#__import']));
+                    const exported = {};
+                    for (const importedIterator in imported) {
+                        if (imported.hasOwnProperty(importedIterator)) {
+                            this[`${key}.${importedIterator}`] = imported[importedIterator];
+                        }
+                    }
+                    return;
                 }
             }
             return value;
