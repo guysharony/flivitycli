@@ -42,7 +42,8 @@ exports.description = 'Run project for testing purpose.';
 const action = (params) => {
     const currentOptions = params.opts();
     const configuration = project.load(currentOptions.target);
-    configuration.profile.apply(currentOptions.profile);
+    configuration.compile();
+    // configuration.profile.apply(currentOptions.profile);
 };
 exports.action = action;
 //# sourceMappingURL=index.js.map

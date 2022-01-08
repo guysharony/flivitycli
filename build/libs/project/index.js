@@ -23,12 +23,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.load = void 0;
+const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const compiler = __importStar(require("./compiler"));
 const files = __importStar(require("../files"));
 const load = (dir) => {
-    const compiled = compiler.load(path_1.default.join(dir, '.flv', 'config.json'));
+    const compiled = compiler.load(path_1.default.join(dir, '.flv', 'index.json'));
     const properties = {
+        compile: (dest = path_1.default.join(dir, '.flv', 'compiled.json')) => {
+            fs_1.default.writeFileSync(dest, JSON.stringify(compiled));
+        },
         profile: {
             find: (key) => {
                 const profile = compiled.profiles.filter(profiles_iterator => profiles_iterator.name == key);

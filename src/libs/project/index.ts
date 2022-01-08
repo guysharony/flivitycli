@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import * as compiler from './compiler';
 import * as files from '../files';
@@ -6,9 +7,12 @@ import * as files from '../files';
 export type ProjectConfig = compiler.ProjectConfig;
 
 export const load = (dir: string) => {
-	const compiled = compiler.load(path.join(dir, '.flv', 'config.json'));
+	const compiled = compiler.load(path.join(dir, '.flv', 'index.json'));
 
 	const properties = {
+		compile: (dest: string = path.join(dir, '.flv', 'compiled.json')) => {
+			fs.writeFileSync(dest, JSON.stringify(compiled));
+		},
 		profile: {
 			find: (key: string) => {
 				const profile = compiled.profiles.filter(profiles_iterator => profiles_iterator.name == key);

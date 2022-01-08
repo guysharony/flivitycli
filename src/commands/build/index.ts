@@ -30,5 +30,7 @@ export const action = (params: Command) => {
 
 	const configuration = project.load(currentOptions.target);
 
-	configuration.profile.apply(currentOptions.profile);
+	configuration.compile();
+
+	// configuration.profile.apply(currentOptions.profile);
 };
