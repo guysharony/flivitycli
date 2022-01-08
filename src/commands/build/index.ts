@@ -13,9 +13,13 @@ export const options: CommandOptions = [
 		defaultValue: 'dev'
 	},
 	{
-		flags: '-t, --target <test profile>',
+		flags: '-t, --target <project directory>',
 		description: 'define project directory',
 		required: true
+	},
+	{
+		flags: '-c, --compile <compiled destination>',
+		description: 'define compilation output file'
 	},
 	{
 		flags: '-c, --config <path to file>',
@@ -28,9 +32,7 @@ export const description = 'Run project for testing purpose.';
 export const action = (params: Command) => {
 	const currentOptions = params.opts();
 
-	const configuration = project.load(currentOptions.target);
+	const configuration = project.load(currentOptions.target, currentOptions.compile);
 
-	configuration.compile();
-
-	// configuration.profile.apply(currentOptions.profile);
+	configuration.profile.apply(currentOptions.profile);
 };

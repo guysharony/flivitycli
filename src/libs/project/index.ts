@@ -6,20 +6,23 @@ import * as files from '../files';
 
 export type ProjectConfig = compiler.ProjectConfig;
 
-export const load = (dir: string) => {
+export const load = (dir: string, compile_dest?: string | boolean) => {
 	const compiled = compiler.load(path.join(dir, '.flv', 'index.json'));
+	compiled.inputDir = path.join(dir, compiled.inputDir);
+	compiled.outputDir = path.join(dir, compiled.outputDir);
+
+	if (compile_dest) {
+		fs.writeFileSync(typeof compile_dest == "string" ? compile_dest : path.join(dir, '.flv', 'compiled.json'), JSON.stringify(compiled));
+	}
 
 	const properties = {
-		compile: (dest: string = path.join(dir, '.flv', 'compiled.json')) => {
-			fs.writeFileSync(dest, JSON.stringify(compiled));
-		},
 		profile: {
 			find: (key: string) => {
 				const profile = compiled.profiles.filter(profiles_iterator => profiles_iterator.name == key);
 
 				return profile.length ? profile[0] : null;
 			},
-			apply: (key: string) => {
+			apply: async (key: string) => {
 				const profile = properties.profile.find(key);
 
 				if (!profile) {
@@ -27,7 +30,7 @@ export const load = (dir: string) => {
 					return;
 				}
 
-				files.replaceVars(compiled.inputDir, compiled.outputDir, compiled.profile[0].properties)
+				await files.replaceVars(compiled.inputDir, compiled.outputDir, profile.properties);
 			}
 		}
 	};

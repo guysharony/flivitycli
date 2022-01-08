@@ -29,7 +29,7 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 				await Promise.all(Object.entries(vars).map(async ([key, value]) => {
 					value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
 
-					data = data.replace(new RegExp(`%_${key.toUpperCase()}_%`, 'g'), value);
+					data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
 				}));
 
 				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);

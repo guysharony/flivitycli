@@ -23,7 +23,7 @@ const replaceVars = async (src, dest, vars) => {
                 let data = fs_extra_1.default.readFileSync(fullPath, 'utf-8');
                 await Promise.all(Object.entries(vars).map(async ([key, value]) => {
                     value = (!['string', 'number'].includes(typeof value)) ? (0, serialize_javascript_1.default)(value) : value;
-                    data = data.replace(new RegExp(`%_${key.toUpperCase()}_%`, 'g'), value);
+                    data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
                 }));
                 const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
                 fs_1.default.mkdir(path_1.default.dirname(destDir), { recursive: true }, function (err) {

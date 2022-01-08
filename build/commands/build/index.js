@@ -29,9 +29,13 @@ exports.options = [
         defaultValue: 'dev'
     },
     {
-        flags: '-t, --target <test profile>',
+        flags: '-t, --target <project directory>',
         description: 'define project directory',
         required: true
+    },
+    {
+        flags: '-c, --compile <compiled destination>',
+        description: 'define compilation output file'
     },
     {
         flags: '-c, --config <path to file>',
@@ -41,9 +45,8 @@ exports.options = [
 exports.description = 'Run project for testing purpose.';
 const action = (params) => {
     const currentOptions = params.opts();
-    const configuration = project.load(currentOptions.target);
-    configuration.compile();
-    // configuration.profile.apply(currentOptions.profile);
+    const configuration = project.load(currentOptions.target, currentOptions.compile);
+    configuration.profile.apply(currentOptions.profile);
 };
 exports.action = action;
 //# sourceMappingURL=index.js.map

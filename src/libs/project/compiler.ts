@@ -43,16 +43,27 @@ export const readJson = (content: string, reviver?: (this: any, key: string, val
 }
 
 export const load = (src: string): ProjectConfig => {
-	const __filterCommands = (key: string, value: { [x: string]: any }) => {
+	const __filterCommands = function(this: any, key: string, value: { [x: string]: any }) {
 		let results = [];
 
 		const commands = Object.keys(value).filter((k) => !k.indexOf(`#__${key}`) || (!k.indexOf(`#__${key}(`) && k.indexOf(')') == k.length - 1));
 
 		for (const command of commands) {
 			if (!command.indexOf(`#__${key}(`) && command.indexOf(')') == command.length - 1) {
-				results.push(value[command].replace(new RegExp('%', 'g'), command.substring(`#__${key}(`.length, command.length - 1)));
+				const name = command.substring(`#__${key}(`.length, command.length - 1);
+
+				const imported: { [x: string]: any } = __base(path.join(this.dirname, value[command].replace(new RegExp('%', 'g'), name)));
+				const exported: { [x: string]: any } = {};
+
+				for (const imported_iterator in imported) {
+					if (imported.hasOwnProperty(imported_iterator)) {
+						exported[`${name}.${imported_iterator}`] = imported[imported_iterator];
+					}
+				}
+
+				results.push(exported);
 			} else if (!command.indexOf(`#__${key}`)) {
-				results.push(value[command]);
+				results.push(__base(path.join(this.dirname, value[command])));
 			}
 		}
 
@@ -63,37 +74,19 @@ export const load = (src: string): ProjectConfig => {
 		const content = readFile(baseDir);
 		if (!content) return {};
 	
-		const dirname = path.dirname(baseDir);
-	
 		return readJson(content, function(key: string, value: any) {
-			if (typeof value == "object") {
-				const imports = __filterCommands("import", value);
+			if (value instanceof Object && !(value instanceof Array)) {
+				const imports = __filterCommands.call({ dirname: path.dirname(baseDir) }, "import", value);
 
-				console.log(imports.map(__base));
-
-				value = {
-					...value
-				};
-
-				for (const import_iterator in imports.map(__base)) {
-					console.log(import_iterator);
+				for (const import_iterator of imports) {
+					value = { ...value, ...import_iterator };
 				}
 
-				/*
-
-				if ('#__import' in value && typeof value['#__import'] == "string") {
-					const imported: { [x: string]: any } = __base(path.join(dirname, value['#__import']));
-
-					for (const importedIterator in imported) {
-						if (imported.hasOwnProperty(importedIterator)) {
-							this[`${key}.${importedIterator}`] = imported[importedIterator];
-						}
-					}
-
-					return;
-				}
-
-				*/
+				return Object.keys(value).reduce((result: { [x: string]: any }, key) => {
+					if (!key.startsWith('#__'))
+						result[key] = value[key];
+					return result;
+				}, {});
 			}
 	
 			return value;
