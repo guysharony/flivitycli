@@ -63,6 +63,8 @@ export const action = async (params: Command) => {
 		try {
 			require(path.join(target, '.flv', 'index.js'));
 		} catch (e) {
+			console.log(e);
+
 			throw new Error(`configuration file can't be found.`);
 		}
 	})();

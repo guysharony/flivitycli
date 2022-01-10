@@ -54,6 +54,7 @@ const action = async (params) => {
             require(path_1.default.join(target, '.flv', 'index.js'));
         }
         catch (e) {
+            console.log(e);
             throw new Error(`configuration file can't be found.`);
         }
     })();
