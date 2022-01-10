@@ -41,11 +41,15 @@ export default ((__services: AWSService<AWSTypes>[]) => {
 	const __create = (properties: Omit<AWSService<AWSTypes>, 'key' | 'type'>, type: AWSTypes) => {
 		const identical = __services.filter(cluster => cluster.name == properties.name && cluster.type == type);
 
+		const key = `aws_${type.toLowerCase()}${properties.name && properties.name.length > 0 ? `_${properties.name}` : ''}${identical.length ? `_${identical.length}` : ''}`;
+
 		__services.push({
 			...properties,
 			type,
-			key: `aws_${type.toLowerCase()}${properties.name && properties.name.length > 0 ? `_${properties.name}` : ''}${identical.length ? `_${identical.length}` : ''}`
+			key
 		});
+
+		return key;
 	}
 
 	return {
