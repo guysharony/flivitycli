@@ -18,27 +18,29 @@ interface InitS3 {}
 
 interface InitMediaConvert {}
 
-
-type AWSTypes = 'S3' | 'SES' | 'MEDIA_CONVERT';
-
 type AWSInits<T> =
 	T extends 'S3' ? InitS3 :
 	T extends 'SES' ? InitSES :
 	T extends 'MEDIA_CONVERT' ? InitMediaConvert :
 	object;
 
-interface AWSService<T> {
-	fields: AWSInits<T>;
+type AWSTypes = 'S3' | 'SES' | 'MEDIA_CONVERT';
+
+type AWSServiceBase<T extends {}> = T & {
 	type: T;
 	key: string;
 	name: string;
 	credentials: AWSCredentials;
 	properties: AWSProperties;
-}
+};
+
+type AWSService<T extends {}> = AWSServiceBase<AWSInits<T>>;
+
+type AWSServiceParameter<T extends {}> = Omit<AWSServiceBase<AWSInits<T>>, 'key' | 'type'>;
 
 
 export default ((__services: AWSService<AWSTypes>[]) => {
-	const __create = (properties: Omit<AWSService<AWSTypes>, 'key' | 'type'>, type: AWSTypes): string => {
+	const __create = (properties: AWSServiceParameter<AWSTypes>, type: AWSTypes): string => {
 		const identical = __services.filter(cluster => cluster.name == properties.name && cluster.type == type);
 
 		const key = `aws_${type.toLowerCase()}${properties.name && properties.name.length > 0 ? `_${properties.name}` : ''}${identical.length ? `_${identical.length}` : ''}`;
@@ -54,14 +56,16 @@ export default ((__services: AWSService<AWSTypes>[]) => {
 
 	return {
 		create: {
-			s3: (properties: Omit<AWSService<'S3'>, "key" | "type">) => __create(properties, 'S3'),
-			ses: (properties: Omit<AWSService<'SES'>, "key" | "type">) => __create(properties, 'SES'),
-			mediaConvert: (properties: Omit<AWSService<'MEDIA_CONVERT'>, "key" | "type">) => __create(properties, 'MEDIA_CONVERT'),
+			s3: (properties: AWSServiceParameter<'S3'>) => __create(properties, 'S3'),
+			ses: (properties: AWSServiceParameter<'SES'>) => __create(properties, 'SES'),
+			mediaConvert: (properties: AWSServiceParameter<'MEDIA_CONVERT'>) => __create(properties, 'MEDIA_CONVERT'),
 		},
-		find: (key: string) => {
-			const availables = __services.filter(cluster => cluster.key == key);
+		find: (key: string | string[]) => {
+			const availables = __services.filter(cluster => (typeof key == 'string' ? [ key ] : key).includes(cluster.key));
 
-			return availables.length ? availables[0] : null;
+			if (!availables.length) return (null);
+
+			return availables;
 		}
 	};
 })([])
