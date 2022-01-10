@@ -9,33 +9,53 @@ interface AWSProperties {
 }
 
 interface InitSES {
-	type: 'SES';
-	name: string;
-	crefentials: AWSCredentials;
 	addresses: {
 		[x: string]: string;
 	};
+}
+
+interface InitS3 {}
+
+interface InitMediaConvert {}
+
+
+type AWSTypes = 'S3' | 'SES' | 'MEDIA_CONVERT';
+
+type AWSInits<T> =
+	T extends 'S3' ? InitS3 :
+	T extends 'SES' ? InitSES :
+	T extends 'MEDIA_CONVERT' ? InitMediaConvert :
+	object;
+
+interface AWSService<T> {
+	fields: AWSInits<T>;
+	type: T;
+	key: string;
+	name: string;
+	credentials: AWSCredentials;
 	properties: AWSProperties;
 }
 
-type AWSServices = Array<InitSES>;
 
+export default ((__services: AWSService<AWSTypes>[]) => {
+	const __create = (properties: Omit<AWSService<AWSTypes>, 'key' | 'type'>, type: AWSTypes) => {
+		const identical = __services.filter(cluster => cluster.name == properties.name && cluster.type == type);
 
-export default ((__services: AWSServices) => {
+		__services.push({
+			...properties,
+			type,
+			key: `aws_${type.toLowerCase()}${properties.name && properties.name.length > 0 ? `_${properties.name}` : ''}${identical.length ? `_${identical.length}` : ''}`
+		});
+	}
+
 	return {
 		create: {
-			ses: (properties: InitSES) => {
-				if (__services.filter(cluster => cluster.name == properties.name && cluster.type == 'SES').length)
-					throw new Error(`Cluster '${properties.name}' already exist.`);
-	
-					__services.push({
-					...properties,
-					type: 'SES'
-				});
-			}
+			s3: (properties: Omit<AWSService<'S3'>, "key" | "type">) => __create(properties, 'S3'),
+			ses: (properties: Omit<AWSService<'SES'>, "key" | "type">) => __create(properties, 'SES'),
+			mediaConvert: (properties: Omit<AWSService<'MEDIA_CONVERT'>, "key" | "type">) => __create(properties, 'MEDIA_CONVERT'),
 		},
-		find: (name: string) => {
-			const availables = __services.filter(cluster => cluster.name == name && cluster.type == 'SES');
+		find: (key: string) => {
+			const availables = __services.filter(cluster => cluster.key == key);
 
 			return availables.length ? availables[0] : null;
 		}
