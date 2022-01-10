@@ -1,6 +1,8 @@
 import { Command } from 'commander';
+import path from 'path';
 
 import { CommandOptions } from '../../libs/commands';
+import customModules from '../../libs/customModules';
 import * as project from '../../libs/project';
 
 
@@ -29,10 +31,43 @@ export const options: CommandOptions = [
 
 export const description = 'Run project for testing purpose.';
 
-export const action = (params: Command) => {
+export const action = async (params: Command) => {
 	const currentOptions = params.opts();
 
-	const configuration = project.load(currentOptions.target, currentOptions.compile);
+	const target = path.join(process.cwd(), currentOptions.target);
 
-	configuration.profile.apply(currentOptions.profile);
+	(() => {
+		var Module = require('module');
+		var originalRequire = Module.prototype.require;
+
+		Module.prototype.require = function() {
+			const requireModule = () => {
+				let imported = null;
+
+				try {
+					imported = originalRequire.apply(this, arguments);
+				} catch (e) {
+					imported = customModules(arguments['0']);
+				}
+
+				return imported;
+			};
+
+			const importedModule = requireModule();
+
+			if (!importedModule) return;
+
+			return importedModule;
+		};
+
+		try {
+			require(path.join(target, '.flv', 'index.js'));
+		} catch (e) {
+			throw new Error(`configuration file can't be found.`);
+		}
+	})();
+
+	// const configuration = project.load(currentOptions.target, currentOptions.compile);
+
+	// configuration.profile.apply(currentOptions.profile);
 };

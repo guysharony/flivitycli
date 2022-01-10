@@ -1,0 +1,1 @@
+export const flivity = 'This is a test';
