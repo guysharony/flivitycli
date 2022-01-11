@@ -1,6 +1,8 @@
+import { FunctionType } from "../../types";
+
 interface Server {
-	host: string;
-	port: number | string;
+	host: FunctionType<string>;
+	port: FunctionType<string | number>;
 };
 
 interface Properties {
@@ -8,15 +10,15 @@ interface Properties {
 };
 
 interface Service {
-	name: string;
+	name: FunctionType<string>;
 	server: Server;
-	entry: string;
+	entry: FunctionType<string>;
 	properties: Properties;
 };
 
 
 interface Cluster {
-	key: string;
+	name: FunctionType<string>;
 	properties: Properties;
 	services: Service[]
 }
@@ -29,15 +31,15 @@ class Clusters {
 		this.clusters = [];
 	}
 
-	find(key: string) {
-		const items = this.clusters.filter(cluster => cluster.key == key);
+	find(name: string) {
+		const items = this.clusters.filter(cluster => (cluster.name instanceof Function ? cluster.name() : cluster.name) == name);
 
 		return items.length ? items[0] : null;
 	}
 
 	create(properties: Cluster) {
-		if (this.find(properties.key))
-			throw new Error(`Cluster '${properties.key}' already exist.`);
+		if (this.find(properties.name instanceof Function ? properties.name() : properties.name))
+			throw new Error(`Cluster '${properties.name}' already exist.`);
 
 		this.clusters.push(properties);
 	}

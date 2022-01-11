@@ -1,0 +1,1 @@
+export type FunctionType<T> = (() => T) | T;

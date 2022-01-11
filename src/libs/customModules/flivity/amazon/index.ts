@@ -1,16 +1,18 @@
+import { FunctionType } from "../../types";
+
 interface AWSCredentials {
-	region: string;
-	accessKeyid: string;
-	secretAccessKey: string;
+	region: FunctionType<string>;
+	accessKeyid: FunctionType<string>;
+	secretAccessKey: FunctionType<string>;
 }
 
 interface AWSProperties {
-	[x: string]: number | string;
+	[x: string]: FunctionType<string | number>;
 }
 
 interface InitSES {
 	addresses: {
-		[x: string]: string;
+		[x: string]: FunctionType<string>;
 	};
 }
 
@@ -28,8 +30,8 @@ type AWSTypes = 'S3' | 'SES' | 'MEDIA_CONVERT';
 
 type AWSServiceBase<T extends {}> = T & {
 	type: T;
-	key: string;
-	name: string;
+	key: FunctionType<string>;
+	name: FunctionType<string>;
 	credentials: AWSCredentials;
 	properties: AWSProperties;
 };
@@ -83,8 +85,8 @@ class Amazon {
 		this.services = [];
 	}
 
-	find(key: string) {
-		const availables = this.services.filter(service => (typeof key == 'string' ? [ key ] : key).includes(service.key));
+	find(key: string | string[]) {
+		const availables = this.services.filter(service => (typeof key == 'string' ? [ key ] : key).includes(service.name instanceof Function ? service.name() : service.name));
 
 		if (!availables.length) return (null);
 
