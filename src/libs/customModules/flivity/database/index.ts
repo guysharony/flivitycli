@@ -1,4 +1,4 @@
-import { FunctionType } from "../../types";
+import { FunctionType, ObjectMerge } from "../../types";
 
 interface Server {
 	host: FunctionType<string>;
@@ -16,7 +16,8 @@ interface Credentials {
 	port: FunctionType<number>;
 }
 
-interface Database {
+interface DatabaseBase {
+	key: string;
 	name: FunctionType<string>;
 	server: Server;
 	credentials: {
@@ -25,28 +26,46 @@ interface Database {
 	}
 }
 
+type DatabaseParameter = Omit<DatabaseBase, 'key'>;
+
+
 class Database {
-	databases: Database[];
+	databases: DatabaseBase[];
 
 	constructor() {
 		this.databases = [];
 	}
 
-	create(properties: Database) {
-		const name = properties.name instanceof Function ? properties.name() : properties.name;
+	create(properties: DatabaseParameter) {
+		const master_name = properties.name instanceof Function ? properties.name() : properties.name;
+		const master_length = this.find(master_name);
+		const master_key = `${master_name}${master_length ? `_${master_length}` : ''}`;
 
-		if (this.find(name))
-			throw new Error(`Database '${name}' already exist.`);
+		this.databases.push({
+			...properties,
+			key: master_key
+		});
 
-		this.databases.push(properties);
+		return {
+			replicate: (replicate: Partial<DatabaseParameter>) => {
+				const replica_base = `${master_key}_replica`;
+				const replicas_length = this.databases.filter(database => database.key.startsWith(replica_base));
+				const replicas_key = `${replica_base}${replicas_length ? `_${replicas_length}` : ''}`;
 
-		return name;
+				return {
+					...<DatabaseBase>ObjectMerge(replicate, replicate),
+					key: replicas_key
+				};
+			}
+		};
 	}
 
-	find(name: string): Database | null {
-		const items = this.databases.filter(database => database.name instanceof Function ? database.name() : database.name == name);
+	find(key: string | string[]) {
+		const availables = this.databases.filter(database => (typeof key == 'string' ? [ key ] : key).includes(database.key));
 
-		return items.length ? items[0] : null;
+		if (!availables.length) return (null);
+
+		return availables.reduce((obj: { [x: string]: Omit<DatabaseBase, 'key'> }, item) => (obj[item.key] = (({ key, ...o }) => o)(item), obj), {});
 	}
 }
 

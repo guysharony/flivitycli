@@ -3,6 +3,7 @@ import path from 'path';
 
 import { CommandOptions } from '../../libs/commands';
 import customModules from '../../libs/customModules';
+import * as flivity from '../../libs/customModules/flivity';
 import * as project from '../../libs/project';
 
 
@@ -12,7 +13,7 @@ export const options: CommandOptions = [
 	{
 		flags: '-p, --profile <test profile>',
 		description: 'define test profile',
-		defaultValue: 'dev'
+		defaultValue: 'development'
 	},
 	{
 		flags: '-t, --target <project directory>',
@@ -37,8 +38,10 @@ export const action = async (params: Command) => {
 	const target = path.join(process.cwd(), currentOptions.target);
 
 	(() => {
-		var Module = require('module');
-		var originalRequire = Module.prototype.require;
+		flivity.server.mode = currentOptions.profile;
+
+		const Module = require('module');
+		const originalRequire = Module.prototype.require;
 
 		Module.prototype.require = function() {
 			const requireModule = () => {

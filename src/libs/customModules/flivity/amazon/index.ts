@@ -85,12 +85,19 @@ class Amazon {
 		this.services = [];
 	}
 
+	get zone() {
+		return {
+			city: 'paris',
+			region: 'eu-west-3'
+		};
+	}
+
 	find(key: string | string[]) {
-		const availables = this.services.filter(service => (typeof key == 'string' ? [ key ] : key).includes(service.name instanceof Function ? service.name() : service.name));
+		const availables = this.services.filter(service => (typeof key == 'string' ? [ key ] : key).includes(service.key instanceof Function ? service.key() : service.key));
 
 		if (!availables.length) return (null);
 
-		return availables;
+		return availables.reduce((obj: { [x: string]: Omit<AWSService<AWSTypes>, 'key'> }, item) => (obj[item.key instanceof Function ? item.key() : item.key] = (({ key, ...o }) => o)(item), obj) ,{});
 	}
 
 	get create() {

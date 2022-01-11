@@ -6,7 +6,8 @@ exports.default = (key) => {
         imported = require(`./${key}`);
     }
     catch (e) {
-        throw new Error(`unknown module '${key}'`);
+        console.log(e);
+        return;
     }
     return imported;
 };
