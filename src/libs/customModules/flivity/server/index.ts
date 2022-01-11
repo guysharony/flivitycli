@@ -1,26 +1,30 @@
-interface Server {
-	domain: string;
-	mode: 'development' | 'production' | 'deploy';
-}
+type ServerModes = 'development' | 'production' | 'deploy';
 
-export default ((__server: Server) => {
 
-	return {
-		set domain(value: string) {
-			__server.domain = value;
-		},
-		get domain() {
-			return __server.domain;
-		},
-		set mode(value: 'development' | 'production' | 'deploy') {
-			__server.domain = value;
-		},
-		get mode() {
-			return __server.mode;
-		}
+class Server {
+	private _domain: string;
+	private _mode: ServerModes;
+
+	constructor() {
+		this._domain = 'https://localhost';
+		this._mode = 'development';
 	}
 
-})({
-	domain: 'https://localhost',
-	mode: 'development'
-})
+	set domain(value: string) {
+		this._domain = value;
+	}
+
+	get domain() {
+		return this._domain;
+	}
+
+	set mode(value: ServerModes) {
+		this._domain = value;
+	}
+
+	get mode() {
+		return this._mode;
+	}
+}
+
+export default new Server();

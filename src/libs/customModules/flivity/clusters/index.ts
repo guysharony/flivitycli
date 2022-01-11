@@ -16,26 +16,31 @@ interface Service {
 
 
 interface Cluster {
-	name: string;
+	key: string;
 	properties: Properties;
 	services: Service[]
 }
 
-type Clusters = Cluster[];
 
+class Clusters {
+	clusters: Cluster[];
 
-export default ((__clusters: Clusters) => {
-	return {
-		create: (properties: Cluster) => {
-			if (__clusters.filter(cluster => cluster.name == properties.name).length)
-				throw new Error(`Cluster '${properties.name}' already exist.`);
+	constructor() {
+		this.clusters = [];
+	}
 
-			__clusters.push(properties);
-		},
-		find: (name: string) => {
-			const availables = __clusters.filter(cluster => cluster.name == name);
+	find(key: string) {
+		const items = this.clusters.filter(cluster => cluster.key == key);
 
-			return availables.length ? availables[0] : null;
-		}
-	};
-})([])
+		return items.length ? items[0] : null;
+	}
+
+	create(properties: Cluster) {
+		if (this.find(properties.key))
+			throw new Error(`Cluster '${properties.key}' already exist.`);
+
+		this.clusters.push(properties);
+	}
+}
+
+export default new Clusters();
