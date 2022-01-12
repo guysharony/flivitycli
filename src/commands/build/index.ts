@@ -37,7 +37,7 @@ export const action = async (params: Command) => {
 
 	const target = path.join(process.cwd(), currentOptions.target);
 
-	(() => {
+	(async () => {
 		flivity.server.mode = currentOptions.profile;
 
 		const Module = require('module');
@@ -64,15 +64,22 @@ export const action = async (params: Command) => {
 		};
 
 		try {
-			require(path.join(target, '.flv', 'index.js'));
+			const configuration = project.load(target);
+			await configuration.apply({
+				flivity: {
+					mode: currentOptions.profile,
+					test: [
+						{
+							entry: 'test',
+							lol: 'value'
+						}
+					]
+				}
+			});
 		} catch (e) {
 			console.log(e);
 
 			throw new Error(`configuration file can't be found.`);
 		}
 	})();
-
-	// const configuration = project.load(currentOptions.target, currentOptions.compile);
-
-	// configuration.profile.apply(currentOptions.profile);
 };

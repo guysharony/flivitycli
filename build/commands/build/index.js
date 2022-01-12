@@ -26,6 +26,7 @@ exports.action = exports.description = exports.options = exports.name = void 0;
 const path_1 = __importDefault(require("path"));
 const customModules_1 = __importDefault(require("../../libs/customModules"));
 const flivity = __importStar(require("../../libs/customModules/flivity"));
+const project = __importStar(require("../../libs/project"));
 exports.name = 'build';
 exports.options = [
     {
@@ -51,7 +52,7 @@ exports.description = 'Run project for testing purpose.';
 const action = async (params) => {
     const currentOptions = params.opts();
     const target = path_1.default.join(process.cwd(), currentOptions.target);
-    (() => {
+    (async () => {
         flivity.server.mode = currentOptions.profile;
         const Module = require('module');
         const originalRequire = Module.prototype.require;
@@ -72,15 +73,24 @@ const action = async (params) => {
             return importedModule;
         };
         try {
-            require(path_1.default.join(target, '.flv', 'index.js'));
+            const configuration = project.load(target);
+            await configuration.apply({
+                flivity: {
+                    mode: currentOptions.profile,
+                    test: [
+                        {
+                            entry: 'test',
+                            lol: 'value'
+                        }
+                    ]
+                }
+            });
         }
         catch (e) {
             console.log(e);
             throw new Error(`configuration file can't be found.`);
         }
     })();
-    // const configuration = project.load(currentOptions.target, currentOptions.compile);
-    // configuration.profile.apply(currentOptions.profile);
 };
 exports.action = action;
 //# sourceMappingURL=index.js.map

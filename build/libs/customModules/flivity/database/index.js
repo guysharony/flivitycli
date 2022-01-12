@@ -17,18 +17,18 @@ class Database {
         this.databases = [];
     }
     create(properties) {
-        const newdatabase = ((_a) => {
-            var { replicate } = _a, standby = __rest(_a, ["replicate"]);
-            if (!replicate)
-                return Object.assign(Object.assign({}, standby), { key: `${standby.name}` });
-            const replicaBase = `${replicate.key}_replica`;
-            const replicas = this.databases.filter(database => database.key.startsWith(replicaBase));
-            return Object.assign(Object.assign({}, (0, types_1.ObjectMerge)(replicate, standby)), { key: `${replicaBase}_${replicas.length}` });
-        })(properties);
-        if (this.find(newdatabase.key))
-            throw new Error(`Database '${newdatabase.key}' already exist.`);
-        this.databases.push(newdatabase);
-        return newdatabase;
+        const master_name = properties.name instanceof Function ? properties.name() : properties.name;
+        const master_length = this.find(master_name);
+        const master_key = `${master_name}${master_length ? `_${master_length}` : ''}`;
+        this.databases.push(Object.assign(Object.assign({}, properties), { key: master_key }));
+        return {
+            replicate: (replicate) => {
+                const replica_base = `${master_key}_replica`;
+                const replicas_length = this.databases.filter(database => database.key.startsWith(replica_base));
+                const replicas_key = `${replica_base}${replicas_length ? `_${replicas_length}` : ''}`;
+                return Object.assign(Object.assign({}, (0, types_1.ObjectMerge)(replicate, replicate)), { key: replicas_key });
+            }
+        };
     }
     find(key) {
         const availables = this.databases.filter(database => (typeof key == 'string' ? [key] : key).includes(database.key));

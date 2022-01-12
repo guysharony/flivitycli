@@ -1,36 +1,84 @@
 import fs from 'fs';
+import fse from 'fs-extra';
+import YAML from 'yaml';
 import path from 'path';
+import serialize from 'serialize-javascript';
 import * as compiler from './compiler';
 import * as files from '../files';
 
 
-export type ProjectConfig = compiler.ProjectConfig;
+interface Vars {
+	[x: string]: any;
+}
 
-export const load = (dir: string, compile_dest?: string | boolean) => {
-	const compiled = compiler.load(path.join(dir, '.flv', 'index.json'));
-	compiled.inputDir = path.join(dir, compiled.inputDir);
-	compiled.outputDir = path.join(dir, compiled.outputDir);
 
-	if (compile_dest) {
-		fs.writeFileSync(typeof compile_dest == "string" ? compile_dest : path.join(dir, '.flv', 'compiled.json'), JSON.stringify(compiled));
+const loadConfig = (dir: string) => {
+	let data = null;
+
+	try {
+		data = require(path.join(dir, '.flv', 'index.js'));
+		data.input = path.join(dir, data.input);
+		data.output = path.join(dir, data.output);
+	} catch (e) {
+		return (null);
 	}
 
-	const properties = {
-		profile: {
-			find: (key: string) => {
-				const profile = compiled.profiles.filter(profiles_iterator => profiles_iterator.name == key);
+	return (data);
+}
 
-				return profile.length ? profile[0] : null;
-			},
-			apply: async (key: string) => {
-				const profile = properties.profile.find(key);
 
-				if (!profile) {
-					console.log(`flivitycli: unknown profile '${key}'\n\nSee 'flivitycli --help'`);
-					return;
+export type ProjectConfig = compiler.ProjectConfig;
+
+export const load = (dir: string) => {
+	const compiled = loadConfig(dir);
+
+	const parseVariables = (vars: Vars = {}) => {
+		const __base = (imported: Vars, prefix: string | null = null) => {
+			let exported: { [x: string]: any } = {};
+
+			for (const imported_iterator in imported) {
+				const exported_key = `${prefix ? `${prefix}.` : ''}${imported_iterator}`.toUpperCase();
+
+				if (imported[imported_iterator] instanceof Object) {
+					exported = { ...exported, ...__base(imported[imported_iterator], exported_key) };
+				} else {
+					exported[exported_key] = imported[imported_iterator];
 				}
+			}
 
-				await files.replaceVars(compiled.inputDir, compiled.outputDir, profile.properties);
+			return exported;
+		}
+
+		return __base(vars);
+	};
+
+	const properties = {
+		replaceVariables: async (source: string, destination: string, vars: Vars) => {
+			let data = fse.readFileSync(source, 'utf-8');
+
+			await Promise.all(Object.entries(vars).map(async ([key, value]) => {
+				value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
+
+				data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
+			}));
+
+			fs.mkdir(path.dirname(destination), { recursive: true }, function (err) {
+				if (err) return null;
+
+				fs.writeFileSync(destination, data);
+			});
+		},
+		apply: async (vars: Vars = {}) => {
+			const variables = parseVariables(vars);
+
+			for (const compose in compiled.composes) {
+				const service = compiled.composes[compose];
+
+				await properties.replaceVariables(
+					path.join(compiled.input, service.entry),
+					path.join(compiled.output, service.entry),
+					variables
+				);
 			}
 		}
 	};
