@@ -17,11 +17,8 @@ const loadConfig = (dir: string) => {
 
 	try {
 		data = require(path.join(dir, '.flv', 'index.js'));
-
-		/*
 		data.input = path.join(dir, data.input);
 		data.output = path.join(dir, data.output);
-		*/
 	} catch (e) {
 		return (null);
 	}
@@ -82,7 +79,14 @@ export const load = (dir: string) => {
 		apply: async (vars: Vars = {}) => {
 			const variables = parseVariables(vars);
 
-			console.log(compiled);
+			for (const server in compiled.servers) {
+				const imported = compiled.servers[server];
+
+				if (imported.file) imported.file = path.join(compiled.output, imported.file);
+				if (imported.secrets) imported.secrets = path.join(compiled.output, imported.secrets);
+
+				console.log(imported);
+			}
 
 			/*
 			for (const compose in compiled.composes) {

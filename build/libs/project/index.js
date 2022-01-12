@@ -13,10 +13,8 @@ const loadConfig = (dir) => {
     let data = null;
     try {
         data = require(path_1.default.join(dir, '.flv', 'index.js'));
-        /*
-        data.input = path.join(dir, data.input);
-        data.output = path.join(dir, data.output);
-        */
+        data.input = path_1.default.join(dir, data.input);
+        data.output = path_1.default.join(dir, data.output);
     }
     catch (e) {
         return (null);
@@ -63,7 +61,14 @@ const load = (dir) => {
         },
         apply: async (vars = {}) => {
             const variables = parseVariables(vars);
-            console.log(compiled);
+            for (const server in compiled.servers) {
+                const imported = compiled.servers[server];
+                if (imported.file)
+                    imported.file = path_1.default.join(compiled.output, imported.file);
+                if (imported.secrets)
+                    imported.secrets = path_1.default.join(compiled.output, imported.secrets);
+                console.log(imported);
+            }
             /*
             for (const compose in compiled.composes) {
                 const service = compiled.composes[compose];
