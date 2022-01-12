@@ -17,8 +17,11 @@ const loadConfig = (dir: string) => {
 
 	try {
 		data = require(path.join(dir, '.flv', 'index.js'));
+
+		/*
 		data.input = path.join(dir, data.input);
 		data.output = path.join(dir, data.output);
+		*/
 	} catch (e) {
 		return (null);
 	}
@@ -62,15 +65,26 @@ export const load = (dir: string) => {
 				data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
 			}));
 
+			fs.mkdir(path.dirname(`${destination}.json`), { recursive: true }, function (err) {
+				if (err) return null;
+
+				fs.writeFileSync(`${destination}.json`, JSON.stringify(YAML.parse(data), null, '\t').replace(/: "(?:[^"]+|\\")*",?$/gm, ' $&'));
+			});
+
+			/*
 			fs.mkdir(path.dirname(destination), { recursive: true }, function (err) {
 				if (err) return null;
 
 				fs.writeFileSync(destination, data);
 			});
+			*/
 		},
 		apply: async (vars: Vars = {}) => {
 			const variables = parseVariables(vars);
 
+			console.log(compiled);
+
+			/*
 			for (const compose in compiled.composes) {
 				const service = compiled.composes[compose];
 
@@ -80,6 +94,7 @@ export const load = (dir: string) => {
 					variables
 				);
 			}
+			*/
 		}
 	};
 
