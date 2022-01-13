@@ -28,6 +28,7 @@ const fs_extra_1 = __importDefault(require("fs-extra"));
 const yaml_1 = __importDefault(require("yaml"));
 const path_1 = __importDefault(require("path"));
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
+const flivity = __importStar(require("../customModules/flivity"));
 const files = __importStar(require("../files"));
 const loadConfig = (dir) => {
     let data = null;
@@ -81,7 +82,8 @@ const load = (dir) => {
             */
         },
         apply: async (vars = {}) => {
-            const variables = parseVariables(vars);
+            console.log('VARIABLE: ', flivity);
+            // const variables = parseVariables(vars);
             for (const server_name in compiled.servers) {
                 const server = compiled.servers[server_name];
                 const compose_file = path_1.default.join(compiled.output.absolute, server_name, server.file);

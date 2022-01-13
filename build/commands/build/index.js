@@ -77,6 +77,9 @@ const action = async (params) => {
             await configuration.apply({
                 flivity: {
                     mode: currentOptions.profile,
+                    server: {
+                        host: currentOptions.profile,
+                    },
                     aws: {
                         region: 'eu-west-3'
                     }

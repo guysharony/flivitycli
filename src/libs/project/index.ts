@@ -3,10 +3,9 @@ import fse from 'fs-extra';
 import YAML from 'yaml';
 import path from 'path';
 import serialize from 'serialize-javascript';
+import * as flivity from '../customModules/flivity';
 import * as compiler from './compiler';
 import * as files from '../files';
-import { rejects } from 'assert';
-import { resolve } from 'path/posix';
 
 
 interface Vars {
@@ -79,7 +78,9 @@ export const load = (dir: string) => {
 			*/
 		},
 		apply: async (vars: Vars = {}) => {
-			const variables = parseVariables(vars);
+			console.log('VARIABLE: ', flivity);
+
+			// const variables = parseVariables(vars);
 
 			for (const server_name in compiled.servers) {
 				const server = compiled.servers[server_name];
