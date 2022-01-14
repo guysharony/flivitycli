@@ -78,6 +78,7 @@ export const action = async (params: Command) => {
 					}
 				}
 			});
+
 		} catch (e) {
 			console.log(e);
 
