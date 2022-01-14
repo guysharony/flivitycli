@@ -74,7 +74,18 @@ const action = async (params) => {
         };
         try {
             const configuration = project.load(target);
-            await configuration.apply(flivity);
+            await configuration.apply({
+                flivity: {
+                    server: {
+                        domain: flivity.server.domain,
+                        mode: flivity.server.mode,
+                        localIP: flivity.server.localIP
+                    },
+                    amazon: {
+                        zone: flivity.amazon.zone
+                    }
+                }
+            });
         }
         catch (e) {
             console.log(e);

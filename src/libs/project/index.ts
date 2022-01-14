@@ -68,16 +68,14 @@ export const load = (dir: string) => {
 				data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
 			}));
 
-			/*
 			fs.mkdir(path.dirname(destination), { recursive: true }, function (err) {
 				if (err) return null;
 
 				fs.writeFileSync(destination, data);
 			});
-			*/
 		},
 		apply: async (vars: Vars = {}) => {
-			// const variables = parseVariables(vars);
+			let variables = parseVariables(vars);
 
 			for (const server_name in compiled.servers) {
 				const server = compiled.servers[server_name];
@@ -93,11 +91,25 @@ export const load = (dir: string) => {
 					const service = imported.compose.services[service_name];
 					const service_secrets = service.secrets;
 
+					let service_environment = { ...variables };
+
+					if (service.environment) {
+						service_environment = {
+							...service_environment,
+							...parseVariables({
+								flivity: {
+									env: service.environment
+								}
+							})
+						}
+						service.environment = Object.entries(service.environment).map(([k, v]) => `${k}=${v}`);
+					}
+
 					if ('build' in service) {
 						const inputContext = path.join(compiled.input.absolute, server_name, service.build.context);
 						const outputContext = path.join(compiled.output.absolute, server_name, service.build.context);
 
-						await files.replaceVars(inputContext, outputContext, vars);
+						await files.replaceVars(inputContext, outputContext, service_environment);
 					}
 
 					const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
@@ -141,43 +153,7 @@ export const load = (dir: string) => {
 	
 					fs.writeFileSync(compose_file, YAML.stringify(compiled.servers[server_name].compose));
 				});
-
-				/*
-				const imported = compiled.servers[server];
-
-				const file = path.join(compiled.output, imported.file);
-				const secrets = path.join(compiled.output, imported.secrets);
-
-				console.log(file, imported.file);
-				console.log(secrets, imported.secrets);
-
-				for (const service in imported.compose.services) {
-					const secretsDir = imported.secrets.replace(new RegExp('%__service__%', 'g'), service);
-
-					const secrets = imported.compose.services[service].secrets;
-
-					for (const secret in secrets) {
-						const secretsRel = secretsDir;
-						const secretsAbs = path.join(outputAbsDir, secretsDir);
-
-						console.log(path.join(secretsRel, secret), ' ==> ', path.join(secretsAbs, secret));
-						// console.log(`${path.join(compiled.output, secretsDir)} == ${secret} => ${secrets[secret]}`);
-					}
-				}
-				*/
 			}
-
-			/*
-			for (const compose in compiled.composes) {
-				const service = compiled.composes[compose];
-
-				await properties.replaceVariables(
-					path.join(compiled.input, service.entry),
-					path.join(compiled.output, service.entry),
-					variables
-				);
-			}
-			*/
 		}
 	};
 

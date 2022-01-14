@@ -72,16 +72,14 @@ const load = (dir) => {
                 value = (!['string', 'number'].includes(typeof value)) ? (0, serialize_javascript_1.default)(value) : value;
                 data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
             }));
-            /*
-            fs.mkdir(path.dirname(destination), { recursive: true }, function (err) {
-                if (err) return null;
-
-                fs.writeFileSync(destination, data);
+            fs_1.default.mkdir(path_1.default.dirname(destination), { recursive: true }, function (err) {
+                if (err)
+                    return null;
+                fs_1.default.writeFileSync(destination, data);
             });
-            */
         },
         apply: async (vars = {}) => {
-            // const variables = parseVariables(vars);
+            let variables = parseVariables(vars);
             for (const server_name in compiled.servers) {
                 const server = compiled.servers[server_name];
                 const compose_file = path_1.default.join(compiled.output.absolute, server_name, server.file);
@@ -93,10 +91,20 @@ const load = (dir) => {
                 for (const service_name in imported.compose.services) {
                     const service = imported.compose.services[service_name];
                     const service_secrets = service.secrets;
+                    let service_environment = Object.assign({}, variables);
+                    if (service.environment) {
+                        service_environment = Object.assign(Object.assign({}, service_environment), parseVariables({
+                            flivity: {
+                                env: service.environment
+                            }
+                        }));
+                        service.environment = Object.entries(service.environment).map(([k, v]) => `${k}=${v}`);
+                    }
                     if ('build' in service) {
                         const inputContext = path_1.default.join(compiled.input.absolute, server_name, service.build.context);
                         const outputContext = path_1.default.join(compiled.output.absolute, server_name, service.build.context);
-                        await files.replaceVars(inputContext, outputContext, vars);
+                        console.log(service_environment);
+                        await files.replaceVars(inputContext, outputContext, service_environment);
                     }
                     const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
                     const service_secrets_relative = secrets_dir.relative.replace(new RegExp('%__service__%', 'g'), service_name);
@@ -129,41 +137,7 @@ const load = (dir) => {
                         return null;
                     fs_1.default.writeFileSync(compose_file, yaml_1.default.stringify(compiled.servers[server_name].compose));
                 });
-                /*
-                const imported = compiled.servers[server];
-
-                const file = path.join(compiled.output, imported.file);
-                const secrets = path.join(compiled.output, imported.secrets);
-
-                console.log(file, imported.file);
-                console.log(secrets, imported.secrets);
-
-                for (const service in imported.compose.services) {
-                    const secretsDir = imported.secrets.replace(new RegExp('%__service__%', 'g'), service);
-
-                    const secrets = imported.compose.services[service].secrets;
-
-                    for (const secret in secrets) {
-                        const secretsRel = secretsDir;
-                        const secretsAbs = path.join(outputAbsDir, secretsDir);
-
-                        console.log(path.join(secretsRel, secret), ' ==> ', path.join(secretsAbs, secret));
-                        // console.log(`${path.join(compiled.output, secretsDir)} == ${secret} => ${secrets[secret]}`);
-                    }
-                }
-                */
             }
-            /*
-            for (const compose in compiled.composes) {
-                const service = compiled.composes[compose];
-
-                await properties.replaceVariables(
-                    path.join(compiled.input, service.entry),
-                    path.join(compiled.output, service.entry),
-                    variables
-                );
-            }
-            */
         }
     };
     return properties;

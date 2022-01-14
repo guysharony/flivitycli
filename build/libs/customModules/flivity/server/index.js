@@ -11,7 +11,6 @@ const localIP = (() => {
                 if (net.family === 'IPv4' && !net.internal) {
                     if (!results[name])
                         results[name] = [];
-                    console.log(name);
                     results[name].push(net.address);
                 }
             }
@@ -24,9 +23,6 @@ class Server {
         this._domain = '';
         this._mode = 'development';
     }
-    set domain(value) {
-        this._domain = value;
-    }
     get domain() {
         return this._domain;
     }
@@ -38,11 +34,14 @@ class Server {
             throw new Error(`You are not connected to the internet.`);
         }
     }
+    get mode() {
+        return this._mode;
+    }
     set mode(value) {
         this._mode = value;
     }
-    get mode() {
-        return this._mode;
+    set domain(value) {
+        this._domain = value;
     }
 }
 exports.default = new Server();

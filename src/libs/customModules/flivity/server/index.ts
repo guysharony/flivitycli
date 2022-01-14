@@ -25,23 +25,19 @@ const localIP = (() => {
 })();
 
 class Server {
-	private _domain: string;
-	private _mode: ServerModes;
+	protected _domain: string;
+	protected _mode: ServerModes;
 
 	constructor() {
 		this._domain = '';
 		this._mode = 'development';
 	}
 
-	set domain(value: string) {
-		this._domain = value;
-	}
-
-	get domain() {
+	public get domain() {
 		return this._domain;
 	}
 
-	get localIP() {
+	public get localIP() {
 		try {
 			return localIP.en1[0];
 		} catch (e) {
@@ -49,12 +45,16 @@ class Server {
 		}
 	}
 
+	public get mode() {
+		return this._mode;
+	}
+
 	set mode(value: ServerModes) {
 		this._mode = value;
 	}
 
-	get mode() {
-		return this._mode;
+	set domain(value: string) {
+		this._domain = value;
 	}
 }
 
