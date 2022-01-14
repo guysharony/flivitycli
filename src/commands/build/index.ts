@@ -65,17 +65,7 @@ export const action = async (params: Command) => {
 
 		try {
 			const configuration = project.load(target);
-			await configuration.apply({
-				flivity: {
-					mode: currentOptions.profile,
-					server: {
-						host: currentOptions.profile,
-					},
-					aws: {
-						region: 'eu-west-3'
-					}
-				}
-			});
+			await configuration.apply(flivity);
 		} catch (e) {
 			console.log(e);
 

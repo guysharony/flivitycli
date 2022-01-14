@@ -4,7 +4,7 @@ type ServerModes = 'development' | 'production' | 'deploy';
 
 const localIP = (() => {
 	const nets = networkInterfaces();
-	const results = Object.create(null);
+	const results: { [x: string]: any } = {};
 
 	for (const name of Object.keys(nets)) {
 		const current = nets[name];
@@ -20,6 +20,8 @@ const localIP = (() => {
 			}
 		}
 	}
+
+	return (results);
 })();
 
 class Server {
@@ -40,7 +42,11 @@ class Server {
 	}
 
 	get localIP() {
-		return localIP;
+		try {
+			return localIP.en1[0];
+		} catch (e) {
+			throw new Error(`You are not connected to the internet.`);
+		}
 	}
 
 	set mode(value: ServerModes) {
