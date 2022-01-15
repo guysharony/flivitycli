@@ -8,6 +8,7 @@ async function app(): Promise<void> {
 
 	await commands.create('auth');
 	await commands.create('build');
+	await commands.create('convert-compose');
 
 	commands.execute();
 }

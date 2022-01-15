@@ -80,6 +80,7 @@ const load = (dir) => {
         },
         apply: async (vars = {}) => {
             let variables = parseVariables(vars);
+            fs_1.default.rmSync(compiled.output.absolute, { recursive: true, force: true });
             for (const server_name in compiled.servers) {
                 const server = compiled.servers[server_name];
                 const compose_file = path_1.default.join(compiled.output.absolute, server_name, server.file);
@@ -103,7 +104,6 @@ const load = (dir) => {
                     if ('build' in service) {
                         const inputContext = path_1.default.join(compiled.input.absolute, server_name, service.build.context);
                         const outputContext = path_1.default.join(compiled.output.absolute, server_name, service.build.context);
-                        console.log(service_environment);
                         await files.replaceVars(inputContext, outputContext, service_environment);
                     }
                     const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);

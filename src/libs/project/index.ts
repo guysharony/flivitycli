@@ -3,7 +3,6 @@ import fse from 'fs-extra';
 import YAML from 'yaml';
 import path from 'path';
 import serialize from 'serialize-javascript';
-import * as compiler from './compiler';
 import * as files from '../files';
 
 
@@ -24,8 +23,6 @@ const loadConfig = (dir: string) => {
 	return (data);
 }
 
-
-export type ProjectConfig = compiler.ProjectConfig;
 
 export const load = (dir: string) => {
 	const compiled = loadConfig(dir);
@@ -76,6 +73,8 @@ export const load = (dir: string) => {
 		},
 		apply: async (vars: Vars = {}) => {
 			let variables = parseVariables(vars);
+
+			fs.rmSync(compiled.output.absolute, { recursive: true, force: true });
 
 			for (const server_name in compiled.servers) {
 				const server = compiled.servers[server_name];

@@ -25,6 +25,7 @@ async function app() {
     commands.name("flivitycli");
     await commands.create('auth');
     await commands.create('build');
+    await commands.create('convert-compose');
     commands.execute();
 }
 app();
