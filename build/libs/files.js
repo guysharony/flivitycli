@@ -19,21 +19,18 @@ const replaceVars = async (src, dest, vars) => {
             if (fullPathType.isDirectory()) {
                 manage(fullPath);
             }
-            if (fullPathType.isFile()) {
-                let data = fs_extra_1.default.readFileSync(fullPath, 'utf-8');
+            if (fullPathType.isFile() && ['.js', '.css', '.html'].includes(path_1.default.extname(file))) {
+                const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
+                let data = fs_extra_1.default.readFileSync(destDir, 'utf-8');
                 await Promise.all(Object.entries(vars).map(async ([key, value]) => {
                     value = (!['string', 'number'].includes(typeof value)) ? (0, serialize_javascript_1.default)(value) : value;
                     data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
                 }));
-                const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
-                fs_1.default.mkdir(path_1.default.dirname(destDir), { recursive: true }, function (err) {
-                    if (err)
-                        return null;
-                    fs_1.default.writeFileSync(destDir, data);
-                });
+                fs_1.default.writeFileSync(destDir, data);
             }
         }
     };
+    fs_extra_1.default.copySync(src, dest);
     await manage(src);
 };
 exports.replaceVars = replaceVars;

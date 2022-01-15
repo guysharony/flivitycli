@@ -23,8 +23,10 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 				manage(fullPath);
 			}
 
-			if (fullPathType.isFile()) {
-				let data = fse.readFileSync(fullPath, 'utf-8');
+			if (fullPathType.isFile() && ['.js', '.css', '.html'].includes(path.extname(file))) {
+				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
+
+				let data = fse.readFileSync(destDir, 'utf-8');
 
 				await Promise.all(Object.entries(vars).map(async ([key, value]) => {
 					value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
@@ -32,16 +34,12 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 					data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
 				}));
 
-				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
-
-				fs.mkdir(path.dirname(destDir), { recursive: true }, function (err) {
-					if (err) return null;
-
-					fs.writeFileSync(destDir, data);
-				});
+				fs.writeFileSync(destDir, data);
 			}
 		}
 	};
+
+	fse.copySync(src, dest);
 
 	await manage(src);
 }
