@@ -3,6 +3,7 @@ import path from 'path';
 
 import { CommandOptions } from '../../libs/commands';
 import customModules from '../../libs/customModules';
+import * as aws from '../../libs/aws';
 import * as flivity from '../../libs/customModules/flivity';
 import * as project from '../../libs/project';
 
@@ -33,6 +34,8 @@ export const options: CommandOptions = [
 export const description = 'Run project for testing purpose.';
 
 export const action = async (params: Command) => {
+	console.log('test: ', await flivity.secrets.database());
+
 	const currentOptions = params.opts();
 
 	const target = path.join(process.cwd(), currentOptions.target);

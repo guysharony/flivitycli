@@ -50,6 +50,7 @@ exports.options = [
 ];
 exports.description = 'Run project for testing purpose.';
 const action = async (params) => {
+    console.log('test: ', await flivity.secrets.database());
     const currentOptions = params.opts();
     const target = path_1.default.join(process.cwd(), currentOptions.target);
     (async () => {

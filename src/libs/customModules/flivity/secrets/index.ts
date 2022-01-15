@@ -1,37 +1,61 @@
-import { FunctionType } from "../../types"
+import AWS from "aws-sdk";
 
 
 interface Secret {
-	name: FunctionType<string>;
-	properties: {
-		value: FunctionType<string>;
-		duration: FunctionType<number>;
-		interval?: FunctionType<number>;
-	};
+	[x: string]: any
 }
 
 class Secrets {
-	secrets: Secret[];
+	secrets: Secret;
 
 	constructor() {
-		this.secrets = [];
+		this.secrets = {};
+
+		this.database = this.database.bind(this);
 	}
 
-	create(properties: Secret) {
-		const name = properties.name instanceof Function ? properties.name() : properties.name;
-
-		if (this.find(name))
-			throw new Error(`Secret '${name}' already exist.`);
-
-		this.secrets.push(properties);
-
-		return name;
+	getSecrets(SecretId: string): Promise<JSON> {
+		return new Promise((resolve, reject) => {
+			try {
+				const client = new AWS.SecretsManager({
+					region: 'us-west-2'
+				});
+		
+				client.getSecretValue({ SecretId }, function(err, data) {
+					if (err) {
+						if (err.code === 'DecryptionFailureException')
+							throw err;
+						else if (err.code === 'InternalServiceErrorException')
+							throw err;
+						else if (err.code === 'InvalidParameterException')
+							throw err;
+						else if (err.code === 'InvalidRequestException')
+							throw err;
+						else if (err.code === 'ResourceNotFoundException')
+							throw err;
+					}
+					else {
+						const secretString = data.SecretString;
+	
+						if (!secretString) throw 'SecretString error';
+	
+						return resolve(JSON.parse(secretString));
+					}
+				});
+			} catch (e) {
+				return reject(e);
+			}
+		});
 	}
 
-	find(name: string) {
-		const items = this.secrets.filter(secret => (secret.name instanceof Function ? secret.name() : secret.name) == name);
+	async database() {
+		if (!('database' in this.secrets)) {
+			const data = await this.getSecrets('database/credentials');
 
-		return items.length ? items[0] : null;
+			this.secrets['database'] = data;
+		}
+		
+		return this.secrets.database;
 	}
 }
 
