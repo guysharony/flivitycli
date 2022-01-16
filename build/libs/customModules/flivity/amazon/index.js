@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const elbv2_1 = __importDefault(require("./elbv2"));
 const secrets_1 = __importDefault(require("./secrets"));
 ;
 class Amazon {
@@ -19,6 +20,9 @@ class Amazon {
         return {
             database: secrets_1.default.database
         };
+    }
+    elbv2(name, region) {
+        return elbv2_1.default.find(region ? region : this.zone.region)[name];
     }
 }
 exports.default = new Amazon();

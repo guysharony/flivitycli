@@ -1,3 +1,4 @@
+import elbv2 from './elbv2';
 import secrets from './secrets';
 
 
@@ -24,6 +25,10 @@ class Amazon {
 		return {
 			database: secrets.database
 		};
+	}
+
+	elbv2(name: string, region?: string) {
+		return elbv2.find(region ? region : this.zone.region)[name];
 	}
 }
 
