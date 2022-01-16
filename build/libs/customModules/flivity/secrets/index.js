@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const aws_sdk_1 = __importDefault(require("aws-sdk"));
 class Secrets {
     constructor() {
-        this.secrets = [];
+        this.secrets = {};
         this.database = this.database.bind(this);
     }
     getSecrets(SecretId) {
@@ -17,16 +17,23 @@ class Secrets {
                 });
                 client.getSecretValue({ SecretId }, function (err, data) {
                     if (err) {
-                        if (err.code === 'DecryptionFailureException')
-                            throw err;
-                        else if (err.code === 'InternalServiceErrorException')
-                            throw err;
-                        else if (err.code === 'InvalidParameterException')
-                            throw err;
-                        else if (err.code === 'InvalidRequestException')
-                            throw err;
-                        else if (err.code === 'ResourceNotFoundException')
-                            throw err;
+                        try {
+                            if (err.code === 'DecryptionFailureException')
+                                throw err;
+                            else if (err.code === 'InternalServiceErrorException')
+                                throw err;
+                            else if (err.code === 'InvalidParameterException')
+                                throw new Error(`Parameters not valid.`);
+                            else if (err.code === 'InvalidRequestException')
+                                throw new Error(`Request to aws secrets not found.`);
+                            else if (err.code === 'ResourceNotFoundException')
+                                throw new Error(`Unknown secret '${SecretId}'.`);
+                            else if (err.code === 'UnrecognizedClientException')
+                                throw new Error("Failed to authenticate to AWS.");
+                        }
+                        catch (e) {
+                            return reject(e);
+                        }
                     }
                     else {
                         const secretString = data.SecretString;
@@ -41,9 +48,17 @@ class Secrets {
             }
         });
     }
-    async database() {
-        const data = await this.getSecrets('database/credentials');
-        return (data);
+    async database(key) {
+        try {
+            if (!('database' in this.secrets)) {
+                const data = await this.getSecrets('database/credentials');
+                this.secrets['database'] = data;
+            }
+            return this.secrets.database[key];
+        }
+        catch (e) {
+            console.log(e);
+        }
     }
 }
 exports.default = new Secrets();

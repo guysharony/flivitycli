@@ -27,8 +27,10 @@ const localIP = (() => {
 class Server {
 	protected _domain: string;
 	protected _mode: ServerModes;
+	private _error: boolean;
 
 	constructor() {
+		this._error = false;
 		this._domain = '';
 		this._mode = 'development';
 	}
@@ -47,6 +49,14 @@ class Server {
 
 	public get mode() {
 		return this._mode;
+	}
+
+	public get error() {
+		return this._error;
+	}
+
+	set error(value: boolean) {
+		this._error = value;
 	}
 
 	set mode(value: ServerModes) {

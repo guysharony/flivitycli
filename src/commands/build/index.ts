@@ -1,9 +1,8 @@
-import { Command } from 'commander';
 import path from 'path';
+import { Command } from 'commander';
 
 import { CommandOptions } from '../../libs/commands';
 import customModules from '../../libs/customModules';
-import * as aws from '../../libs/aws';
 import * as flivity from '../../libs/customModules/flivity';
 import * as project from '../../libs/project';
 
@@ -34,8 +33,6 @@ export const options: CommandOptions = [
 export const description = 'Run project for testing purpose.';
 
 export const action = async (params: Command) => {
-	console.log('test: ', await flivity.secrets.database());
-
 	const currentOptions = params.opts();
 
 	const target = path.join(process.cwd(), currentOptions.target);
@@ -47,28 +44,19 @@ export const action = async (params: Command) => {
 		const originalRequire = Module.prototype.require;
 
 		Module.prototype.require = function() {
-			const requireModule = () => {
-				let imported = null;
-
-				try {
-					imported = originalRequire.apply(this, arguments);
-				} catch (e) {
-					imported = customModules(arguments['0']);
-				}
-
-				return imported;
-			};
-
-			const importedModule = requireModule();
-
-			if (!importedModule) return;
-
-			return importedModule;
+			switch (arguments['0']) {
+				case 'flivity':
+					return customModules(arguments['0']);
+				default:
+					return originalRequire.apply(this, arguments);
+			}
 		};
 
-		try {
-			const configuration = project.load(target);
+		const configuration = project.load(target);
 
+		if (!configuration) return (null);
+
+		try {
 			await configuration.apply({
 				flivity: {
 					server: {
@@ -77,15 +65,21 @@ export const action = async (params: Command) => {
 						localIP: flivity.server.localIP
 					},
 					amazon: {
-						zone: flivity.amazon.zone
+						zone: flivity.amazon.zone,
+						secrets: {
+							database: async (key: string) => {
+								const secrets = flivity.amazon.secrets.database(key);
+	
+								if (!(secrets && (key in secrets))) return (null);
+	
+								return secrets[key];
+							}
+						}
 					}
 				}
 			});
-
 		} catch (e) {
-			console.log(e);
-
-			throw new Error(`configuration file can't be found.`);
+			console.log('TOM: ', e);
 		}
 	})();
 };

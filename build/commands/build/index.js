@@ -50,7 +50,6 @@ exports.options = [
 ];
 exports.description = 'Run project for testing purpose.';
 const action = async (params) => {
-    console.log('test: ', await flivity.secrets.database());
     const currentOptions = params.opts();
     const target = path_1.default.join(process.cwd(), currentOptions.target);
     (async () => {
@@ -58,23 +57,17 @@ const action = async (params) => {
         const Module = require('module');
         const originalRequire = Module.prototype.require;
         Module.prototype.require = function () {
-            const requireModule = () => {
-                let imported = null;
-                try {
-                    imported = originalRequire.apply(this, arguments);
-                }
-                catch (e) {
-                    imported = (0, customModules_1.default)(arguments['0']);
-                }
-                return imported;
-            };
-            const importedModule = requireModule();
-            if (!importedModule)
-                return;
-            return importedModule;
+            switch (arguments['0']) {
+                case 'flivity':
+                    return (0, customModules_1.default)(arguments['0']);
+                default:
+                    return originalRequire.apply(this, arguments);
+            }
         };
+        const configuration = project.load(target);
+        if (!configuration)
+            return (null);
         try {
-            const configuration = project.load(target);
             await configuration.apply({
                 flivity: {
                     server: {
@@ -83,14 +76,21 @@ const action = async (params) => {
                         localIP: flivity.server.localIP
                     },
                     amazon: {
-                        zone: flivity.amazon.zone
+                        zone: flivity.amazon.zone,
+                        secrets: {
+                            database: async (key) => {
+                                const secrets = flivity.amazon.secrets.database(key);
+                                if (!(secrets && (key in secrets)))
+                                    return (null);
+                                return secrets[key];
+                            }
+                        }
                     }
                 }
             });
         }
         catch (e) {
-            console.log(e);
-            throw new Error(`configuration file can't be found.`);
+            console.log('TOM: ', e);
         }
     })();
 };

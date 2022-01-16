@@ -30,17 +30,19 @@ const path_1 = __importDefault(require("path"));
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const files = __importStar(require("../files"));
 const loadConfig = (dir) => {
-    let data = null;
     try {
-        data = require(path_1.default.join(dir, '.flv', 'index.js'));
+        return require(path_1.default.join(dir, '.flv', 'index.js'));
     }
     catch (e) {
-        return (null);
+        if (e instanceof Error) {
+            console.log(`flivitycli: ${e.message}`);
+        }
     }
-    return (data);
 };
 const load = (dir) => {
     const compiled = loadConfig(dir);
+    if (!compiled)
+        return (null);
     compiled.input = {
         absolute: path_1.default.join(dir, compiled.input),
         relative: compiled.input

@@ -1,4 +1,3 @@
-import { CommanderError } from "commander";
 import { program, CommandDefinition } from "../libs/commands";
 
 const importCommand = (key: string) => {

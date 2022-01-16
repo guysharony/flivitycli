@@ -12,20 +12,21 @@ interface Vars {
 
 
 const loadConfig = (dir: string) => {
-	let data = null;
-
 	try {
-		data = require(path.join(dir, '.flv', 'index.js'));
-	} catch (e) {
-		return (null);
+		return require(path.join(dir, '.flv', 'index.js'));
+	} catch (e: unknown) {
+		if (e instanceof Error) {
+			console.log(`flivitycli: ${e.message}`);
+		}
 	}
-
-	return (data);
 }
 
 
 export const load = (dir: string) => {
 	const compiled = loadConfig(dir);
+
+	if (!compiled) return (null);
+
 	compiled.input = {
 		absolute: path.join(dir, compiled.input),
 		relative: compiled.input

@@ -19,14 +19,24 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const commands = __importStar(require("./commands/index"));
+const secrets_1 = __importDefault(require("./libs/customModules/flivity/amazon/secrets"));
 async function app() {
     commands.name("flivitycli");
-    await commands.create('auth');
-    await commands.create('build');
-    await commands.create('convert-compose');
-    commands.execute();
+    try {
+        await secrets_1.default.init();
+        await commands.create('auth');
+        await commands.create('build');
+        await commands.create('convert-compose');
+        commands.execute();
+    }
+    catch (e) {
+        console.log('ERROR: ', e);
+    }
 }
 app();
 //# sourceMappingURL=index.js.map
