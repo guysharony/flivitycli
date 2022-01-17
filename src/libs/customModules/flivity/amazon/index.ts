@@ -1,5 +1,6 @@
 import elbv2 from './elbv2';
 import secrets from './secrets';
+import mediaConvert from './mediaConvert';
 
 
 interface Zone {
@@ -9,11 +10,23 @@ interface Zone {
 
 class Amazon {
 	private _zone: Zone;
+	private _zones: { [x: string]: any };
 
 	constructor() {
+		this._zones = {
+			'us-west-2': {
+				city: 'oregon'
+			},
+			'eu-west-3': {
+				city: 'paris'
+			}
+		};
+
+		const region = 'AWS_DEFAULT_REGION' in process.env && process.env.AWS_DEFAULT_REGION && process.env.AWS_DEFAULT_REGION in this._zones ? process.env.AWS_DEFAULT_REGION : 'us-west-2';
+
 		this._zone = {
-			city: 'paris',
-			region: 'eu-west-3'
+			region,
+			...(this._zones[region])
 		};
 	}
 
@@ -29,6 +42,12 @@ class Amazon {
 		const elbvalue = await elbv2.find(region ? region : this.zone.region, name);
 
 		return elbvalue.DNSName;
+	}
+
+	async mediaConvert(region?: string) {
+		const elbvalue = await mediaConvert.find(region ? region : this.zone.region);
+
+		return elbvalue;
 	}
 }
 
