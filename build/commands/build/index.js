@@ -64,7 +64,7 @@ const action = async (params) => {
                     return originalRequire.apply(this, arguments);
             }
         };
-        const configuration = project.load(target);
+        const configuration = await project.load(target);
         if (!configuration)
             return (null);
         try {
@@ -76,21 +76,13 @@ const action = async (params) => {
                         localIP: flivity.server.localIP
                     },
                     amazon: {
-                        zone: flivity.amazon.zone,
-                        secrets: {
-                            database: async (key) => {
-                                const secrets = flivity.amazon.secrets.database(key);
-                                if (!(secrets && (key in secrets)))
-                                    return (null);
-                                return secrets[key];
-                            }
-                        }
+                        zone: flivity.amazon.zone
                     }
                 }
             });
         }
         catch (e) {
-            console.log('TOM: ', e);
+            console.log(e);
         }
     })();
 };

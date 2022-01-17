@@ -11,20 +11,8 @@ class Secrets {
 	constructor() {
 		this._secrets = null;
 
-		this.init = this.init.bind(this);
 		this.getSecrets = this.getSecrets.bind(this);
-		this.database = this.database.bind(this);
-	}
-
-	async init() {
-		try {
-			this._secrets = {
-				database: await this.getSecrets('database/credentials')
-			};
-		} catch (e) {
-			console.log(e);
-			return;
-		}
+		this.find = this.find.bind(this);
 	}
 
 	getSecrets(SecretId: string): Promise<JSON> {
@@ -67,10 +55,12 @@ class Secrets {
 		});
 	}
 
-	database(key: string) {
-		if (!this._secrets) throw new Error("Amazon Web Service authentication is required for secrets.");
+	async find(key: string, name: string) {
+		if (!this._secrets) this._secrets = {};
 
-		return this._secrets.database[key];
+		if (!(key in this._secrets)) this._secrets[key] = await this.getSecrets(key);
+
+		return this._secrets[key][name];
 	}
 }
 

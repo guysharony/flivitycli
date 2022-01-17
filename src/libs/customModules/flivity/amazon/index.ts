@@ -21,14 +21,14 @@ class Amazon {
 		return this._zone;
 	}
 
-	get secrets() {
-		return {
-			database: secrets.database
-		};
+	async secrets(name: string, secret?: string) {
+		return (await secrets.find(secret ? secret : 'database/credentials', name));
 	}
 
-	elbv2(name: string, region?: string) {
-		return elbv2.find(region ? region : this.zone.region)[name];
+	async elbv2(name: string, region?: string) {
+		const elbvalue = await elbv2.find(region ? region : this.zone.region, name);
+
+		return elbvalue.DNSName;
 	}
 }
 

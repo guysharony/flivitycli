@@ -11,10 +11,11 @@ interface Vars {
 }
 
 
-const loadConfig = (dir: string) => {
+const loadConfig = async (dir: string) => {
 	try {
-		return require(path.join(dir, '.flv', 'index.js'));
+		return await require(path.join(dir, '.flv', 'index.js'))();
 	} catch (e: unknown) {
+		console.log(e);
 		if (e instanceof Error) {
 			console.log(`flivitycli: ${e.message}`);
 		}
@@ -22,8 +23,8 @@ const loadConfig = (dir: string) => {
 }
 
 
-export const load = (dir: string) => {
-	const compiled = loadConfig(dir);
+export const load = async (dir: string) => {
+	const compiled = await loadConfig(dir);
 
 	if (!compiled) return (null);
 
@@ -101,8 +102,13 @@ export const load = (dir: string) => {
 									env: service.environment
 								}
 							})
-						}
-						service.environment = Object.entries(service.environment).map(([k, v]) => `${k}=${v}`);
+						};
+
+						service.environment = await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+							const env_value_func = async () => { return await v; };
+
+							return `${k}=${(await env_value_func())}`;
+						}));
 					}
 
 					if ('build' in service) {
@@ -124,12 +130,14 @@ export const load = (dir: string) => {
 						const secret_relative = path.join(service_secrets_relative, secret_name);
 
 						const createSecret = async () => new Promise((resolve, rejects) => {
-							fs.mkdir(path.dirname(secret_absolute), { recursive: true }, function (err) {
+							fs.mkdir(path.dirname(secret_absolute), { recursive: true }, async function (err) {
 								if (err) return rejects(null);
 
-								const secret_value = service_secrets[secret_name];
+								const secret_value_func = async () => { return await service_secrets[secret_name]; };
 
-								fs.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? serialize(secret_value) : `${service_secrets[secret_name]}`);
+								const secret_value = await secret_value_func();
+
+								fs.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? serialize(secret_value) : `${secret_value}`);
 
 								if (!('secrets' in imported.compose)) compiled.servers[server_name].compose['secrets'] = {};
 								compiled.servers[server_name].compose.secrets[compose_secret_name] = { file: secret_relative };

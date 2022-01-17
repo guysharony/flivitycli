@@ -52,7 +52,7 @@ export const action = async (params: Command) => {
 			}
 		};
 
-		const configuration = project.load(target);
+		const configuration = await project.load(target);
 
 		if (!configuration) return (null);
 
@@ -65,21 +65,12 @@ export const action = async (params: Command) => {
 						localIP: flivity.server.localIP
 					},
 					amazon: {
-						zone: flivity.amazon.zone,
-						secrets: {
-							database: async (key: string) => {
-								const secrets = flivity.amazon.secrets.database(key);
-	
-								if (!(secrets && (key in secrets))) return (null);
-	
-								return secrets[key];
-							}
-						}
+						zone: flivity.amazon.zone
 					}
 				}
 			});
 		} catch (e) {
-			console.log('TOM: ', e);
+			console.log(e);
 		}
 	})();
 };

@@ -23,7 +23,7 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 				manage(fullPath);
 			}
 
-			if (fullPathType.isFile() && ['.js', '.css', '.html'].includes(path.extname(file))) {
+			if (fullPathType.isFile() && ['.mjs', '.js', '.css', '.html'].includes(path.extname(file))) {
 				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
 
 				let data = fse.readFileSync(destDir, 'utf-8');

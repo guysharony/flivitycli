@@ -1,4 +1,15 @@
 "use strict";
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,24 +18,8 @@ const aws_sdk_1 = __importDefault(require("aws-sdk"));
 class elbv2 {
     constructor() {
         this._elbv2 = null;
-        this.init = this.init.bind(this);
         this.getLoadBalancers = this.getLoadBalancers.bind(this);
         this.find = this.find.bind(this);
-    }
-    async init() {
-        try {
-            const regions = ['us-west-2', 'eu-west-3'];
-            for (const region in regions) {
-                if (!this._elbv2)
-                    this._elbv2 = {};
-                this._elbv2[regions[region]] = await this.getLoadBalancers(regions[region]);
-            }
-            console.log(this._elbv2);
-        }
-        catch (e) {
-            console.log(e);
-            return;
-        }
     }
     async getLoadBalancers(region) {
         return new Promise((resolve, reject) => {
@@ -38,7 +33,11 @@ class elbv2 {
                         const lb = data.LoadBalancers;
                         if (!lb)
                             throw new Error("No load balancers found.");
-                        return resolve(lb.reduce((obj, item) => (obj[item.LoadBalancerName || `${region}_${lb.indexOf(item)}`] = item.DNSName, obj), {}));
+                        return resolve(lb.reduce((obj, item) => {
+                            const { LoadBalancerName } = item, loadBalancerValue = __rest(item, ["LoadBalancerName"]);
+                            obj[LoadBalancerName || `${region}_${lb.indexOf(item)}`] = loadBalancerValue;
+                            return (obj);
+                        }, {}));
                     }
                 });
             }
@@ -47,10 +46,12 @@ class elbv2 {
             }
         });
     }
-    find(key) {
+    async find(key, name) {
         if (!this._elbv2)
-            throw new Error("Amazon Web Service authentication is required for Elastic Load Balancers.");
-        return this._elbv2[key];
+            this._elbv2 = {};
+        if (!(key in this._elbv2))
+            this._elbv2[key] = await this.getLoadBalancers(key);
+        return this._elbv2[key][name];
     }
 }
 exports.default = new elbv2();

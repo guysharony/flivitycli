@@ -11,27 +11,11 @@ class elbv2 {
 	constructor() {
 		this._elbv2 = null;
 
-		this.init = this.init.bind(this);
 		this.getLoadBalancers = this.getLoadBalancers.bind(this);
 		this.find = this.find.bind(this);
 	}
 
-	async init() {
-		try {
-			const regions = [ 'us-west-2', 'eu-west-3' ];
-
-			for (const region in regions) {
-				if (!this._elbv2) this._elbv2 = {};
-
-				this._elbv2[regions[region]] = await this.getLoadBalancers(regions[region]);
-			}
-		} catch (e) {
-			console.log(e);
-			return;
-		}
-	}
-
-	async getLoadBalancers(region: string) {
+	async getLoadBalancers(region: string): Promise<{ [x: string]: any }> {
 		return new Promise((resolve, reject) => {
 			try {
 				const client = new AWS.ELBv2({ region });
@@ -44,7 +28,13 @@ class elbv2 {
 
 						if (!lb) throw new Error("No load balancers found.");
 
-						return resolve(lb.reduce((obj: { [x: string]: any }, item) => (obj[item.LoadBalancerName || `${region}_${lb.indexOf(item)}`] = item.DNSName, obj), {}));
+						return resolve(lb.reduce((obj: { [x: string]: any }, item) => {
+							const { LoadBalancerName, ...loadBalancerValue } = item;
+
+							obj[LoadBalancerName || `${region}_${lb.indexOf(item)}`] = loadBalancerValue;
+
+							return (obj);
+						}, {}));
 					}
 				});
 			} catch (e) {
@@ -53,10 +43,12 @@ class elbv2 {
 		});
 	}
 
-	find(key: string) {
-		if (!this._elbv2) throw new Error("Amazon Web Service authentication is required for Elastic Load Balancers.");
+	async find(key: string, name: string): Promise<{ [x: string]: any }> {
+		if (!this._elbv2) this._elbv2 = {};
 
-		return this._elbv2[key];
+		if (!(key in this._elbv2)) this._elbv2[key] = await this.getLoadBalancers(key);
+
+		return this._elbv2[key][name];
 	}
 }
 

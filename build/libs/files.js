@@ -19,7 +19,7 @@ const replaceVars = async (src, dest, vars) => {
             if (fullPathType.isDirectory()) {
                 manage(fullPath);
             }
-            if (fullPathType.isFile() && ['.js', '.css', '.html'].includes(path_1.default.extname(file))) {
+            if (fullPathType.isFile() && ['.mjs', '.js', '.css', '.html'].includes(path_1.default.extname(file))) {
                 const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
                 let data = fs_extra_1.default.readFileSync(destDir, 'utf-8');
                 await Promise.all(Object.entries(vars).map(async ([key, value]) => {

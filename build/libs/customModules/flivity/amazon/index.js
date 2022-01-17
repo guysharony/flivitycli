@@ -16,13 +16,12 @@ class Amazon {
     get zone() {
         return this._zone;
     }
-    get secrets() {
-        return {
-            database: secrets_1.default.database
-        };
+    async secrets(name, secret) {
+        return (await secrets_1.default.find(secret ? secret : 'database/credentials', name));
     }
-    elbv2(name, region) {
-        return elbv2_1.default.find(region ? region : this.zone.region)[name];
+    async elbv2(name, region) {
+        const elbvalue = await elbv2_1.default.find(region ? region : this.zone.region, name);
+        return elbvalue.DNSName;
     }
 }
 exports.default = new Amazon();

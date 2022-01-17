@@ -29,18 +29,19 @@ const yaml_1 = __importDefault(require("yaml"));
 const path_1 = __importDefault(require("path"));
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const files = __importStar(require("../files"));
-const loadConfig = (dir) => {
+const loadConfig = async (dir) => {
     try {
-        return require(path_1.default.join(dir, '.flv', 'index.js'));
+        return await require(path_1.default.join(dir, '.flv', 'index.js'))();
     }
     catch (e) {
+        console.log(e);
         if (e instanceof Error) {
             console.log(`flivitycli: ${e.message}`);
         }
     }
 };
-const load = (dir) => {
-    const compiled = loadConfig(dir);
+const load = async (dir) => {
+    const compiled = await loadConfig(dir);
     if (!compiled)
         return (null);
     compiled.input = {
@@ -101,7 +102,10 @@ const load = (dir) => {
                                 env: service.environment
                             }
                         }));
-                        service.environment = Object.entries(service.environment).map(([k, v]) => `${k}=${v}`);
+                        service.environment = await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+                            const env_value_func = async () => { return await v; };
+                            return `${k}=${(await env_value_func())}`;
+                        }));
                     }
                     if ('build' in service) {
                         const inputContext = path_1.default.join(compiled.input.absolute, server_name, service.build.context);
@@ -116,11 +120,12 @@ const load = (dir) => {
                         const secret_absolute = path_1.default.join(service_secrets_absolute, secret_name);
                         const secret_relative = path_1.default.join(service_secrets_relative, secret_name);
                         const createSecret = async () => new Promise((resolve, rejects) => {
-                            fs_1.default.mkdir(path_1.default.dirname(secret_absolute), { recursive: true }, function (err) {
+                            fs_1.default.mkdir(path_1.default.dirname(secret_absolute), { recursive: true }, async function (err) {
                                 if (err)
                                     return rejects(null);
-                                const secret_value = service_secrets[secret_name];
-                                fs_1.default.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? (0, serialize_javascript_1.default)(secret_value) : `${service_secrets[secret_name]}`);
+                                const secret_value_func = async () => { return await service_secrets[secret_name]; };
+                                const secret_value = await secret_value_func();
+                                fs_1.default.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? (0, serialize_javascript_1.default)(secret_value) : `${secret_value}`);
                                 if (!('secrets' in imported.compose))
                                     compiled.servers[server_name].compose['secrets'] = {};
                                 compiled.servers[server_name].compose.secrets[compose_secret_name] = { file: secret_relative };

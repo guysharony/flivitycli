@@ -7,20 +7,8 @@ const aws_sdk_1 = __importDefault(require("aws-sdk"));
 class Secrets {
     constructor() {
         this._secrets = null;
-        this.init = this.init.bind(this);
         this.getSecrets = this.getSecrets.bind(this);
-        this.database = this.database.bind(this);
-    }
-    async init() {
-        try {
-            this._secrets = {
-                database: await this.getSecrets('database/credentials')
-            };
-        }
-        catch (e) {
-            console.log(e);
-            return;
-        }
+        this.find = this.find.bind(this);
     }
     getSecrets(SecretId) {
         return new Promise((resolve, reject) => {
@@ -61,10 +49,12 @@ class Secrets {
             }
         });
     }
-    database(key) {
+    async find(key, name) {
         if (!this._secrets)
-            throw new Error("Amazon Web Service authentication is required for secrets.");
-        return this._secrets.database[key];
+            this._secrets = {};
+        if (!(key in this._secrets))
+            this._secrets[key] = await this.getSecrets(key);
+        return this._secrets[key][name];
     }
 }
 exports.default = new Secrets();

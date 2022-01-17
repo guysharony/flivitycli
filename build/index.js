@@ -19,18 +19,11 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const commands = __importStar(require("./commands/index"));
-const elbv2_1 = __importDefault(require("./libs/customModules/flivity/amazon/elbv2"));
-const secrets_1 = __importDefault(require("./libs/customModules/flivity/amazon/secrets"));
 async function app() {
     commands.name("flivitycli");
     try {
-        await secrets_1.default.init();
-        await elbv2_1.default.init();
         await commands.create('auth');
         await commands.create('build');
         await commands.create('convert-compose');
