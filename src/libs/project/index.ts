@@ -11,11 +11,10 @@ interface Vars {
 }
 
 
-const loadConfig = async (dir: string) => {
+const loadConfig = (dir: string) => {
 	try {
-		return await require(path.join(dir, '.flv', 'index.js'))();
+		return require(path.join(dir, '.flv', 'index.js'));
 	} catch (e: unknown) {
-		console.log(e);
 		if (e instanceof Error) {
 			console.log(`flivitycli: ${e.message}`);
 		}
@@ -24,7 +23,7 @@ const loadConfig = async (dir: string) => {
 
 
 export const load = async (dir: string) => {
-	const compiled = await loadConfig(dir);
+	const compiled = loadConfig(dir);
 
 	if (!compiled) return (null);
 

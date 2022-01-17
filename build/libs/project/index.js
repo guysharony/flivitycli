@@ -29,19 +29,18 @@ const yaml_1 = __importDefault(require("yaml"));
 const path_1 = __importDefault(require("path"));
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
 const files = __importStar(require("../files"));
-const loadConfig = async (dir) => {
+const loadConfig = (dir) => {
     try {
-        return await require(path_1.default.join(dir, '.flv', 'index.js'))();
+        return require(path_1.default.join(dir, '.flv', 'index.js'));
     }
     catch (e) {
-        console.log(e);
         if (e instanceof Error) {
             console.log(`flivitycli: ${e.message}`);
         }
     }
 };
 const load = async (dir) => {
-    const compiled = await loadConfig(dir);
+    const compiled = loadConfig(dir);
     if (!compiled)
         return (null);
     compiled.input = {
