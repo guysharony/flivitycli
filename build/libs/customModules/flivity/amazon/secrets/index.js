@@ -13,9 +13,7 @@ class Secrets {
     getSecrets(SecretId) {
         return new Promise((resolve, reject) => {
             try {
-                const client = new aws_sdk_1.default.SecretsManager({
-                    region: 'us-west-2'
-                });
+                const client = new aws_sdk_1.default.SecretsManager({ region: 'us-west-2' });
                 client.getSecretValue({ SecretId }, function (err, data) {
                     if (err) {
                         try {

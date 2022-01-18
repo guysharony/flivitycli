@@ -11,10 +11,12 @@ class Amazon {
     constructor() {
         this._zones = {
             'us-west-2': {
-                city: 'oregon'
+                city: 'oregon',
+                master: true
             },
             'eu-west-3': {
-                city: 'paris'
+                city: 'paris',
+                master: false
             }
         };
         const region = 'AWS_DEFAULT_REGION' in process.env && process.env.AWS_DEFAULT_REGION && process.env.AWS_DEFAULT_REGION in this._zones ? process.env.AWS_DEFAULT_REGION : 'us-west-2';

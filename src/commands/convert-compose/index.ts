@@ -29,8 +29,6 @@ export const action = async (params: Command) => {
 
 	const compiled = YAML.parse(fse.readFileSync(currentOptions.source, 'utf-8'));
 
-	console.log(compiled);
-
 	fs.mkdir(path.dirname(currentOptions.destination), { recursive: true }, function (err) {
 		if (err) return null;
 

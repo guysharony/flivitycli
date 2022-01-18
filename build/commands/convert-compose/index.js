@@ -25,7 +25,6 @@ exports.description = 'Run project for testing purpose.';
 const action = async (params) => {
     const currentOptions = params.opts();
     const compiled = yaml_1.default.parse(fs_extra_1.default.readFileSync(currentOptions.source, 'utf-8'));
-    console.log(compiled);
     fs_1.default.mkdir(path_1.default.dirname(currentOptions.destination), { recursive: true }, function (err) {
         if (err)
             return null;

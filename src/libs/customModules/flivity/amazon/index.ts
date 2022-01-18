@@ -15,10 +15,12 @@ class Amazon {
 	constructor() {
 		this._zones = {
 			'us-west-2': {
-				city: 'oregon'
+				city: 'oregon',
+				master: true
 			},
 			'eu-west-3': {
-				city: 'paris'
+				city: 'paris',
+				master: false
 			}
 		};
 

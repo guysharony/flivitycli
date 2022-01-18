@@ -77,44 +77,57 @@ export const load = async (dir: string) => {
 
 			fs.rmSync(compiled.output.absolute, { recursive: true, force: true });
 
-			for (const server_name in compiled.servers) {
-				const server = compiled.servers[server_name];
-				const compose_file = path.join(compiled.output.absolute, server_name, server.file);
+			for (const server_name_output in compiled.servers) {
+				const server = compiled.servers[server_name_output];
+				const server_name_input = 'source' in server ? server.source : server_name_output;
+				const compose_file = path.join(compiled.output.absolute, server_name_output, server.file);
 				const secrets_dir = {
 					relative: path.join(server.secrets),
-					absolute: path.join(compiled.output.absolute, server_name, server.secrets)
+					absolute: path.join(compiled.output.absolute, server_name_output, server.secrets)
 				};
 
-				const imported = compiled.servers[server_name];
+				const imported = compiled.servers[server_name_output];
 
 				for (const service_name in imported.compose.services) {
 					const service = imported.compose.services[service_name];
 					const service_secrets = service.secrets;
 
-					let service_environment = { ...variables };
-
-					if (service.environment) {
-						service_environment = {
-							...service_environment,
-							...parseVariables({
-								flivity: {
-									env: service.environment
-								}
-							})
-						};
-
-						service.environment = await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
-							const env_value_func = async () => { return await v; };
-
-							return `${k}=${(await env_value_func())}`;
-						}));
-					}
-
 					if ('build' in service) {
-						const inputContext = path.join(compiled.input.absolute, server_name, service.build.context);
-						const outputContext = path.join(compiled.output.absolute, server_name, service.build.context);
+						const inputContext = path.join(compiled.input.absolute, server_name_input, service.build.context);
+						const outputContext = path.join(compiled.output.absolute, server_name_output, service.build.context);
+
+						let service_environment = { ...variables };
+
+						if (service.environment) {
+							service_environment = {
+								...service_environment,
+								...parseVariables({
+									flivity: {
+										env: service.environment
+									}
+								})
+							};
+						}
 
 						await files.replaceVars(inputContext, outputContext, service_environment);
+
+						if (service.environment) {
+							const env_file = path.join(outputContext, 'env');
+
+							const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+								const env_value_func = async () => { return await v; };
+	
+								return `${k}=${(await env_value_func())}`;
+							}))).join('\n');
+
+							fs.openSync(env_file, 'w');
+
+							fs.writeFileSync(env_file, env_data);
+
+							delete service.environment;
+
+							service.env_file = [ path.join(service.build.context, 'env') ];
+						}
 					}
 
 					const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
@@ -138,8 +151,8 @@ export const load = async (dir: string) => {
 
 								fs.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? serialize(secret_value) : `${secret_value}`);
 
-								if (!('secrets' in imported.compose)) compiled.servers[server_name].compose['secrets'] = {};
-								compiled.servers[server_name].compose.secrets[compose_secret_name] = { file: secret_relative };
+								if (!('secrets' in imported.compose)) compiled.servers[server_name_output].compose['secrets'] = {};
+								compiled.servers[server_name_output].compose.secrets[compose_secret_name] = { file: secret_relative };
 
 								secrets.push(compose_secret_name);
 
@@ -151,14 +164,14 @@ export const load = async (dir: string) => {
 					}
 
 					if (secrets.length) {
-						compiled.servers[server_name].compose.services[service_name].secrets = secrets;
+						compiled.servers[server_name_output].compose.services[service_name].secrets = secrets;
 					}
 				}
 
 				fs.mkdir(path.dirname(compose_file), { recursive: true }, function (err) {
 					if (err) return null;
 	
-					fs.writeFileSync(compose_file, YAML.stringify(compiled.servers[server_name].compose));
+					fs.writeFileSync(compose_file, YAML.stringify(compiled.servers[server_name_output].compose));
 				});
 			}
 		}
