@@ -92,42 +92,45 @@ export const load = async (dir: string) => {
 					const service = imported.compose.services[service_name];
 					const service_secrets = service.secrets;
 
+					let service_environment = { ...variables };
+
+					if (service.environment) {
+						service_environment = {
+							...service_environment,
+							...parseVariables({
+								flivity: {
+									env: service.environment
+								}
+							})
+						};
+					}
+
 					if ('build' in service) {
 						const inputContext = path.join(compiled.input.absolute, server_name_input, service.build.context);
 						const outputContext = path.join(compiled.output.absolute, server_name_output, service.build.context);
 
-						let service_environment = { ...variables };
-
-						if (service.environment) {
-							service_environment = {
-								...service_environment,
-								...parseVariables({
-									flivity: {
-										env: service.environment
-									}
-								})
-							};
-						}
-
 						await files.replaceVars(inputContext, outputContext, service_environment);
+					}
 
-						if (service.environment) {
-							const env_file = path.join(outputContext, 'env');
+					if (service.environment) {
+						const env_file_relative = path.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
+						const env_file_absolute = path.join(compiled.output.absolute, server_name_output, env_file_relative);
 
-							const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
-								const env_value_func = async () => { return await v; };
-	
-								return `${k}=${(await env_value_func())}`;
-							}))).join('\n');
+						const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+							const env_value_func = async () => { return await v; };
 
-							fs.openSync(env_file, 'w');
+							return `${k}=${(await env_value_func())}`;
+						}))).join('\n');
 
-							fs.writeFileSync(env_file, env_data);
+						fs.mkdirSync(path.dirname(env_file_absolute), { recursive: true });
 
-							delete service.environment;
+						fs.openSync(env_file_absolute, 'w');
 
-							service.env_file = [ path.join(service.build.context, 'env') ];
-						}
+						fs.writeFileSync(env_file_absolute, env_data);
+
+						delete service.environment;
+
+						service.env_file = [ env_file_relative ];
 					}
 
 					const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);

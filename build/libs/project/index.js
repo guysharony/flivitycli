@@ -95,29 +95,31 @@ const load = async (dir) => {
                 for (const service_name in imported.compose.services) {
                     const service = imported.compose.services[service_name];
                     const service_secrets = service.secrets;
+                    let service_environment = Object.assign({}, variables);
+                    if (service.environment) {
+                        service_environment = Object.assign(Object.assign({}, service_environment), parseVariables({
+                            flivity: {
+                                env: service.environment
+                            }
+                        }));
+                    }
                     if ('build' in service) {
                         const inputContext = path_1.default.join(compiled.input.absolute, server_name_input, service.build.context);
                         const outputContext = path_1.default.join(compiled.output.absolute, server_name_output, service.build.context);
-                        let service_environment = Object.assign({}, variables);
-                        if (service.environment) {
-                            service_environment = Object.assign(Object.assign({}, service_environment), parseVariables({
-                                flivity: {
-                                    env: service.environment
-                                }
-                            }));
-                        }
                         await files.replaceVars(inputContext, outputContext, service_environment);
-                        if (service.environment) {
-                            const env_file = path_1.default.join(outputContext, 'env');
-                            const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
-                                const env_value_func = async () => { return await v; };
-                                return `${k}=${(await env_value_func())}`;
-                            }))).join('\n');
-                            fs_1.default.openSync(env_file, 'w');
-                            fs_1.default.writeFileSync(env_file, env_data);
-                            delete service.environment;
-                            service.env_file = [path_1.default.join(service.build.context, 'env')];
-                        }
+                    }
+                    if (service.environment) {
+                        const env_file_relative = path_1.default.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
+                        const env_file_absolute = path_1.default.join(compiled.output.absolute, server_name_output, env_file_relative);
+                        const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+                            const env_value_func = async () => { return await v; };
+                            return `${k}=${(await env_value_func())}`;
+                        }))).join('\n');
+                        fs_1.default.mkdirSync(path_1.default.dirname(env_file_absolute), { recursive: true });
+                        fs_1.default.openSync(env_file_absolute, 'w');
+                        fs_1.default.writeFileSync(env_file_absolute, env_data);
+                        delete service.environment;
+                        service.env_file = [env_file_relative];
                     }
                     const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
                     const service_secrets_relative = secrets_dir.relative.replace(new RegExp('%__service__%', 'g'), service_name);
