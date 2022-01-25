@@ -36,6 +36,20 @@ class Amazon {
 		return this._zone;
 	}
 
+	set region(value: string) {
+		if (!(value in this._zones))
+			throw new Error(`The region '${value}' is unknown.`)
+
+		this._zone = {
+			region: value,
+			...(this._zones[value])
+		};
+	}
+
+	get zones() {
+		return this._zones;
+	}
+
 	async secrets(name: string, secret?: string) {
 		return (await secrets.find(secret ? secret : 'database/credentials', name));
 	}

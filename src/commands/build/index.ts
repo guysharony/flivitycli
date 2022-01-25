@@ -3,6 +3,7 @@ import { Command } from 'commander';
 
 import { CommandOptions } from '../../libs/commands';
 import customModules from '../../libs/customModules';
+import builder from '../../libs/builder';
 import * as flivity from '../../libs/customModules/flivity';
 import * as project from '../../libs/project';
 
@@ -35,42 +36,5 @@ export const description = 'Run project for testing purpose.';
 export const action = async (params: Command) => {
 	const currentOptions = params.opts();
 
-	const target = path.join(process.cwd(), currentOptions.target);
-
-	(async () => {
-		flivity.server.mode = currentOptions.profile;
-
-		const Module = require('module');
-		const originalRequire = Module.prototype.require;
-
-		Module.prototype.require = function() {
-			switch (arguments['0']) {
-				case 'flivity':
-					return customModules(arguments['0']);
-				default:
-					return originalRequire.apply(this, arguments);
-			}
-		};
-
-		const configuration = await project.load(target);
-
-		if (!configuration) return (null);
-
-		try {
-			await configuration.apply({
-				flivity: {
-					server: {
-						domain: flivity.server.domain,
-						mode: flivity.server.mode,
-						localIP: flivity.server.localIP
-					},
-					amazon: {
-						zone: flivity.amazon.zone
-					}
-				}
-			});
-		} catch (e) {
-			console.log(e);
-		}
-	})();
+	await builder(path.join(process.cwd(), currentOptions.target), currentOptions.profile);
 };

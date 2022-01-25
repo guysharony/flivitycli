@@ -1,6 +1,6 @@
 import { networkInterfaces } from 'os';
 
-type ServerModes = 'development' | 'production' | 'deploy';
+export type ServerModes = 'development' | 'production' | 'deploy';
 
 const localIP = (() => {
 	const nets = networkInterfaces();

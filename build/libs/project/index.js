@@ -67,7 +67,11 @@ const load = async (dir) => {
         };
         return __base(vars);
     };
+    let _allowedServers = null;
     const properties = {
+        set allowedServers(value) {
+            _allowedServers = value;
+        },
         replaceVariables: async (source, destination, vars) => {
             let data = fs_extra_1.default.readFileSync(source, 'utf-8');
             await Promise.all(Object.entries(vars).map(async ([key, value]) => {
@@ -84,76 +88,82 @@ const load = async (dir) => {
             let variables = parseVariables(vars);
             fs_1.default.rmSync(compiled.output.absolute, { recursive: true, force: true });
             for (const server_name_output in compiled.servers) {
-                const server = compiled.servers[server_name_output];
-                const server_name_input = 'source' in server ? server.source : server_name_output;
-                const compose_file = path_1.default.join(compiled.output.absolute, server_name_output, server.file);
-                const secrets_dir = {
-                    relative: path_1.default.join(server.secrets),
-                    absolute: path_1.default.join(compiled.output.absolute, server_name_output, server.secrets)
-                };
-                const imported = compiled.servers[server_name_output];
-                for (const service_name in imported.compose.services) {
-                    const service = imported.compose.services[service_name];
-                    const service_secrets = service.secrets;
-                    let service_environment = Object.assign({}, variables);
-                    if (service.environment) {
-                        service_environment = Object.assign(Object.assign({}, service_environment), parseVariables({
-                            flivity: {
-                                env: service.environment
-                            }
-                        }));
-                    }
-                    if ('build' in service) {
-                        const inputContext = path_1.default.join(compiled.input.absolute, server_name_input, service.build.context);
-                        const outputContext = path_1.default.join(compiled.output.absolute, server_name_output, service.build.context);
-                        await files.replaceVars(inputContext, outputContext, service_environment);
-                    }
-                    if (service.environment) {
-                        const env_file_relative = path_1.default.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
-                        const env_file_absolute = path_1.default.join(compiled.output.absolute, server_name_output, env_file_relative);
-                        const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
-                            const env_value_func = async () => { return await v; };
-                            return `${k}=${(await env_value_func())}`;
-                        }))).join('\n');
-                        fs_1.default.mkdirSync(path_1.default.dirname(env_file_absolute), { recursive: true });
-                        fs_1.default.openSync(env_file_absolute, 'w');
-                        fs_1.default.writeFileSync(env_file_absolute, env_data);
-                        delete service.environment;
-                        service.env_file = [env_file_relative];
-                    }
-                    const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
-                    const service_secrets_relative = secrets_dir.relative.replace(new RegExp('%__service__%', 'g'), service_name);
-                    let secrets = [];
-                    for (const secret_name in service_secrets) {
-                        const compose_secret_name = `${service_name}__${secret_name}`.toLowerCase();
-                        const secret_absolute = path_1.default.join(service_secrets_absolute, secret_name);
-                        const secret_relative = path_1.default.join(service_secrets_relative, secret_name);
-                        const createSecret = async () => new Promise((resolve, rejects) => {
-                            fs_1.default.mkdir(path_1.default.dirname(secret_absolute), { recursive: true }, async function (err) {
-                                if (err)
-                                    return rejects(null);
-                                const secret_value_func = async () => { return await service_secrets[secret_name]; };
-                                const secret_value = await secret_value_func();
-                                fs_1.default.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? (0, serialize_javascript_1.default)(secret_value) : `${secret_value}`);
-                                if (!('secrets' in imported.compose))
-                                    compiled.servers[server_name_output].compose['secrets'] = {};
-                                compiled.servers[server_name_output].compose.secrets[compose_secret_name] = { file: secret_relative };
-                                secrets.push(compose_secret_name);
-                                return resolve(compose_secret_name);
+                const allowed_server = !_allowedServers || _allowedServers.includes(server_name_output);
+                if (!allowed_server)
+                    delete compiled.servers[server_name_output];
+                else {
+                    const server = compiled.servers[server_name_output];
+                    const server_name_input = 'source' in server ? server.source : server_name_output;
+                    const compose_file = path_1.default.join(compiled.output.absolute, server_name_output, server.file);
+                    const secrets_dir = {
+                        relative: path_1.default.join(server.secrets),
+                        absolute: path_1.default.join(compiled.output.absolute, server_name_output, server.secrets)
+                    };
+                    const imported = compiled.servers[server_name_output];
+                    for (const service_name in imported.compose.services) {
+                        const service = imported.compose.services[service_name];
+                        const service_secrets = service.secrets;
+                        let service_environment = Object.assign({}, variables);
+                        if (service.environment) {
+                            service_environment = Object.assign(Object.assign({}, service_environment), parseVariables({
+                                flivity: {
+                                    env: service.environment
+                                }
+                            }));
+                        }
+                        if ('build' in service) {
+                            const inputContext = path_1.default.join(compiled.input.absolute, server_name_input, service.build.context);
+                            const outputContext = path_1.default.join(compiled.output.absolute, server_name_output, service.build.context);
+                            await files.replaceVars(inputContext, outputContext, service_environment);
+                        }
+                        if (service.environment) {
+                            const env_file_relative = path_1.default.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
+                            const env_file_absolute = path_1.default.join(compiled.output.absolute, server_name_output, env_file_relative);
+                            const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
+                                const env_value_func = async () => { return await v; };
+                                return `${k}=${(await env_value_func())}`;
+                            }))).join('\n');
+                            fs_1.default.mkdirSync(path_1.default.dirname(env_file_absolute), { recursive: true });
+                            fs_1.default.openSync(env_file_absolute, 'w');
+                            fs_1.default.writeFileSync(env_file_absolute, env_data);
+                            delete service.environment;
+                            service.env_file = [env_file_relative];
+                        }
+                        const service_secrets_absolute = secrets_dir.absolute.replace(new RegExp('%__service__%', 'g'), service_name);
+                        const service_secrets_relative = secrets_dir.relative.replace(new RegExp('%__service__%', 'g'), service_name);
+                        let secrets = [];
+                        for (const secret_name in service_secrets) {
+                            const compose_secret_name = `${service_name}__${secret_name}`.toLowerCase();
+                            const secret_absolute = path_1.default.join(service_secrets_absolute, secret_name);
+                            const secret_relative = path_1.default.join(service_secrets_relative, secret_name);
+                            const createSecret = async () => new Promise((resolve, rejects) => {
+                                fs_1.default.mkdir(path_1.default.dirname(secret_absolute), { recursive: true }, async function (err) {
+                                    if (err)
+                                        return rejects(null);
+                                    const secret_value_func = async () => { return await service_secrets[secret_name]; };
+                                    const secret_value = await secret_value_func();
+                                    fs_1.default.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? (0, serialize_javascript_1.default)(secret_value) : `${secret_value}`);
+                                    if (!('secrets' in imported.compose))
+                                        compiled.servers[server_name_output].compose['secrets'] = {};
+                                    compiled.servers[server_name_output].compose.secrets[compose_secret_name] = { file: secret_relative };
+                                    secrets.push(compose_secret_name);
+                                    return resolve(compose_secret_name);
+                                });
                             });
-                        });
-                        await createSecret();
+                            await createSecret();
+                        }
+                        if (secrets.length) {
+                            compiled.servers[server_name_output].compose.services[service_name].secrets = secrets;
+                        }
                     }
-                    if (secrets.length) {
-                        compiled.servers[server_name_output].compose.services[service_name].secrets = secrets;
-                    }
+                    fs_1.default.mkdir(path_1.default.dirname(compose_file), { recursive: true }, function (err) {
+                        if (err)
+                            return null;
+                        fs_1.default.writeFileSync(compose_file, yaml_1.default.stringify(compiled.servers[server_name_output].compose));
+                    });
                 }
-                fs_1.default.mkdir(path_1.default.dirname(compose_file), { recursive: true }, function (err) {
-                    if (err)
-                        return null;
-                    fs_1.default.writeFileSync(compose_file, yaml_1.default.stringify(compiled.servers[server_name_output].compose));
-                });
             }
+            return compiled;
         }
     };
     return properties;

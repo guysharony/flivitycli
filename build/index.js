@@ -26,7 +26,7 @@ async function app() {
     try {
         await commands.create('auth');
         await commands.create('build');
-        await commands.create('convert-compose');
+        await commands.create('deploy');
         commands.execute();
     }
     catch (e) {
