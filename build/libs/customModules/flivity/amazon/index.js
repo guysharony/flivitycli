@@ -12,10 +12,12 @@ class Amazon {
         this._zones = {
             'us-west-2': {
                 city: 'oregon',
+                color: 'green',
                 master: true
             },
             'eu-west-3': {
                 city: 'paris',
+                color: 'blue',
                 master: false
             }
         };

@@ -23,9 +23,14 @@ const loadConfig = (dir: string) => {
 
 
 export const load = async (dir: string) => {
-	const compiled = loadConfig(dir);
+	let _servers: string[] | null = null;
+	let _outputSubdir: string | null = null;
 
-	if (!compiled) return (null);
+	const originalCompiled = loadConfig(dir);
+
+	if (!originalCompiled) return (null);
+
+	const compiled = { ...originalCompiled };
 
 	compiled.input = {
 		absolute: path.join(dir, compiled.input),
@@ -56,34 +61,25 @@ export const load = async (dir: string) => {
 		return __base(vars);
 	};
 
-	let _allowedServers: string[] | null = null;
-
 	const properties = {
-		set allowedServers(value: string[] | null) {
-			_allowedServers = value;
+		set servers(value: string[] | null) {
+			_servers = value;
 		},
-		replaceVariables: async (source: string, destination: string, vars: Vars) => {
-			let data = fse.readFileSync(source, 'utf-8');
-
-			await Promise.all(Object.entries(vars).map(async ([key, value]) => {
-				value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
-
-				data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
-			}));
-
-			fs.mkdir(path.dirname(destination), { recursive: true }, function (err) {
-				if (err) return null;
-
-				fs.writeFileSync(destination, data);
-			});
+		set outputSubdir(value: string | null) {
+			_outputSubdir = value;
 		},
 		apply: async (vars: Vars = {}) => {
+			if (_outputSubdir) {
+				compiled.output.absolute = path.join(compiled.output.absolute, _outputSubdir);
+				compiled.output.relative = path.join(compiled.output.relative, _outputSubdir);
+			}
+
 			let variables = parseVariables(vars);
 
 			fs.rmSync(compiled.output.absolute, { recursive: true, force: true });
 
 			for (const server_name_output in compiled.servers) {
-				const allowed_server = !_allowedServers || _allowedServers.includes(server_name_output);
+				const allowed_server = !_servers || _servers.includes(server_name_output);
 
 				if (!allowed_server) delete compiled.servers[server_name_output];
 				else {

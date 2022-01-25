@@ -4,7 +4,12 @@ import * as flivity from './customModules/flivity';
 import { ServerModes } from './customModules/flivity/server';
 
 
-export default async function (target: string, mode: ServerModes, servers?: string[]) {
+interface Options {
+	servers?: string[],
+	outputSubdir?: string
+}
+
+export default async function (target: string, mode: ServerModes, options?: Options) {
 	flivity.server.mode = mode;
 
 	const Module = require('module');
@@ -23,7 +28,8 @@ export default async function (target: string, mode: ServerModes, servers?: stri
 
 	if (!configuration) return (null);
 
-	if (servers) configuration.allowedServers = servers;
+	if (options?.servers) configuration.servers = options.servers;
+	if (options?.outputSubdir) configuration.outputSubdir = options.outputSubdir;
 
 	try {
 		return await configuration.apply({

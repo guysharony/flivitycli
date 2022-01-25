@@ -25,7 +25,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const customModules_1 = __importDefault(require("./customModules"));
 const project = __importStar(require("./project"));
 const flivity = __importStar(require("./customModules/flivity"));
-async function default_1(target, mode, servers) {
+async function default_1(target, mode, options) {
     flivity.server.mode = mode;
     const Module = require('module');
     const originalRequire = Module.prototype.require;
@@ -40,8 +40,10 @@ async function default_1(target, mode, servers) {
     const configuration = await project.load(target);
     if (!configuration)
         return (null);
-    if (servers)
-        configuration.allowedServers = servers;
+    if (options === null || options === void 0 ? void 0 : options.servers)
+        configuration.servers = options.servers;
+    if (options === null || options === void 0 ? void 0 : options.outputSubdir)
+        configuration.outputSubdir = options.outputSubdir;
     try {
         return await configuration.apply({
             flivity: {

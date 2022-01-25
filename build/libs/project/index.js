@@ -24,7 +24,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.load = void 0;
 const fs_1 = __importDefault(require("fs"));
-const fs_extra_1 = __importDefault(require("fs-extra"));
 const yaml_1 = __importDefault(require("yaml"));
 const path_1 = __importDefault(require("path"));
 const serialize_javascript_1 = __importDefault(require("serialize-javascript"));
@@ -40,9 +39,12 @@ const loadConfig = (dir) => {
     }
 };
 const load = async (dir) => {
-    const compiled = loadConfig(dir);
-    if (!compiled)
+    let _servers = null;
+    let _outputSubdir = null;
+    const originalCompiled = loadConfig(dir);
+    if (!originalCompiled)
         return (null);
+    const compiled = Object.assign({}, originalCompiled);
     compiled.input = {
         absolute: path_1.default.join(dir, compiled.input),
         relative: compiled.input
@@ -67,28 +69,22 @@ const load = async (dir) => {
         };
         return __base(vars);
     };
-    let _allowedServers = null;
     const properties = {
-        set allowedServers(value) {
-            _allowedServers = value;
+        set servers(value) {
+            _servers = value;
         },
-        replaceVariables: async (source, destination, vars) => {
-            let data = fs_extra_1.default.readFileSync(source, 'utf-8');
-            await Promise.all(Object.entries(vars).map(async ([key, value]) => {
-                value = (!['string', 'number'].includes(typeof value)) ? (0, serialize_javascript_1.default)(value) : value;
-                data = data.replace(new RegExp(`%__${key.toUpperCase()}__%`, 'g'), value);
-            }));
-            fs_1.default.mkdir(path_1.default.dirname(destination), { recursive: true }, function (err) {
-                if (err)
-                    return null;
-                fs_1.default.writeFileSync(destination, data);
-            });
+        set outputSubdir(value) {
+            _outputSubdir = value;
         },
         apply: async (vars = {}) => {
+            if (_outputSubdir) {
+                compiled.output.absolute = path_1.default.join(compiled.output.absolute, _outputSubdir);
+                compiled.output.relative = path_1.default.join(compiled.output.relative, _outputSubdir);
+            }
             let variables = parseVariables(vars);
             fs_1.default.rmSync(compiled.output.absolute, { recursive: true, force: true });
             for (const server_name_output in compiled.servers) {
-                const allowed_server = !_allowedServers || _allowedServers.includes(server_name_output);
+                const allowed_server = !_servers || _servers.includes(server_name_output);
                 if (!allowed_server)
                     delete compiled.servers[server_name_output];
                 else {

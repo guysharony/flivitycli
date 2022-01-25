@@ -33,6 +33,7 @@
 	"dependencies": {
 		"async": "^3.2.2",
 		"aws-sdk": "^2.1051.0",
+		"colors": "^1.4.0",
 		"commander": "^8.3.0",
 		"esm": "^3.2.25",
 		"fs": "^0.0.1-security",
