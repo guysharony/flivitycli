@@ -41,15 +41,15 @@ const loadConfig = (dir) => {
 const load = async (dir) => {
     let _servers = null;
     let _outputSubdir = null;
-    const originalCompiled = loadConfig(dir);
-    if (!originalCompiled)
+    const compiled = loadConfig(dir)();
+    if (!compiled)
         return (null);
-    const compiled = Object.assign({}, originalCompiled);
     compiled.input = {
         absolute: path_1.default.join(dir, compiled.input),
         relative: compiled.input
     };
     compiled.output = {
+        source: path_1.default.join(dir, compiled.output),
         absolute: path_1.default.join(dir, compiled.output),
         relative: compiled.output
     };
@@ -96,8 +96,9 @@ const load = async (dir) => {
                         absolute: path_1.default.join(compiled.output.absolute, server_name_output, server.secrets)
                     };
                     const imported = compiled.servers[server_name_output];
-                    for (const service_name in imported.compose.services) {
-                        const service = imported.compose.services[service_name];
+                    const imported_compose = imported.compose;
+                    for (const service_name in imported_compose.services) {
+                        const service = imported_compose.services[service_name];
                         const service_secrets = service.secrets;
                         let service_environment = Object.assign({}, variables);
                         if (service.environment) {
@@ -149,13 +150,13 @@ const load = async (dir) => {
                             await createSecret();
                         }
                         if (secrets.length) {
-                            compiled.servers[server_name_output].compose.services[service_name].secrets = secrets;
+                            imported_compose.services[service_name].secrets = secrets;
                         }
                     }
                     fs_1.default.mkdir(path_1.default.dirname(compose_file), { recursive: true }, function (err) {
                         if (err)
                             return null;
-                        fs_1.default.writeFileSync(compose_file, yaml_1.default.stringify(compiled.servers[server_name_output].compose));
+                        fs_1.default.writeFileSync(compose_file, yaml_1.default.stringify(imported_compose));
                     });
                 }
             }

@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import { Command } from 'commander';
 
@@ -34,12 +35,13 @@ export const action = async (params: Command) => {
 	const server_images: { [x: string]: string[] } = {};
 	const server_configuration: { [x: string]: { production: any, deploy: any } } = {};
 
-	execs.display('Initializating project.', false);
+	execs.display('Creating build.', false);
 	for (const zone in zones) {
 		flivity.amazon.region = zone;
 
 		const server_target = path.join(process.cwd(), currentOptions.target);
 
+		execs.display('=> Creating configurations.');
 		server_configuration[zone] = {
 			production: await builder(server_target, 'production', {
 				servers: requiredServers,
@@ -51,9 +53,11 @@ export const action = async (params: Command) => {
 			})
 		};
 
+		execs.display('=> Authenticating to Elastic Container Registry.');
 		execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);
 	}
 
+	execs.display('\nBuilding images.', false);
 	for (const zone in zones) {
 		server_images[zone] = [];
 
@@ -65,7 +69,7 @@ export const action = async (params: Command) => {
 			const services = configuration.servers[server_name].compose.services;
 
 			for (const service_name in services) {
-				execs.display(`[${server_name}] => Building image '${service_name}'.`);
+				execs.display(`[${server_name}] => Building '${service_name}'.`);
 				const service = services[service_name];
 
 				if (!('build' in service && service.build))
@@ -83,12 +87,12 @@ export const action = async (params: Command) => {
 		}
 	}
 
-	execs.display('Deploying images to Elastic Container Registry.', false);
+	execs.display('\nDeploying images to Elastic Container Registry.', false);
 	for (const region_name in server_images) {
 		flivity.amazon.region = region_name;
 
 		for (const server_image of server_images[region_name]) {
-			// execs.display(`[${region_name}] => Pushing '${server_image}'.`);
+			execs.display(`[${region_name}] => Deploying '${server_image}'.`);
 			// execs.execute(`docker push ${server_image}:latest`);
 			execs.execute(`docker image rm ${server_image}`);
 		}

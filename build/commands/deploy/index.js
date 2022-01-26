@@ -47,10 +47,11 @@ const action = async (params) => {
     const zones = flivity.amazon.zones;
     const server_images = {};
     const server_configuration = {};
-    execs.display('Initializating project.', false);
+    execs.display('Creating build.', false);
     for (const zone in zones) {
         flivity.amazon.region = zone;
         const server_target = path_1.default.join(process.cwd(), currentOptions.target);
+        execs.display('=> Creating configurations.');
         server_configuration[zone] = {
             production: await (0, builder_1.default)(server_target, 'production', {
                 servers: requiredServers,
@@ -61,8 +62,10 @@ const action = async (params) => {
                 outputSubdir: path_1.default.join('deploy', zone)
             })
         };
+        execs.display('=> Authenticating to Elastic Container Registry.');
         execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);
     }
+    execs.display('\nBuilding images.', false);
     for (const zone in zones) {
         server_images[zone] = [];
         flivity.amazon.region = zone;
@@ -70,7 +73,7 @@ const action = async (params) => {
         for (const server_name in configuration.servers) {
             const services = configuration.servers[server_name].compose.services;
             for (const service_name in services) {
-                execs.display(`[${server_name}] => Building image '${service_name}'.`);
+                execs.display(`[${server_name}] => Building '${service_name}'.`);
                 const service = services[service_name];
                 if (!('build' in service && service.build))
                     throw new Error(`build for '${service_name}' not found.`);
@@ -83,11 +86,11 @@ const action = async (params) => {
             }
         }
     }
-    execs.display('Deploying images to Elastic Container Registry.', false);
+    execs.display('\nDeploying images to Elastic Container Registry.', false);
     for (const region_name in server_images) {
         flivity.amazon.region = region_name;
         for (const server_image of server_images[region_name]) {
-            // execs.display(`[${region_name}] => Pushing '${server_image}'.`);
+            execs.display(`[${region_name}] => Deploying '${server_image}'.`);
             // execs.execute(`docker push ${server_image}:latest`);
             execs.execute(`docker image rm ${server_image}`);
         }

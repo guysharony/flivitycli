@@ -1,5 +1,4 @@
 import fs from 'fs';
-import fse from 'fs-extra';
 import YAML from 'yaml';
 import path from 'path';
 import serialize from 'serialize-javascript';
@@ -26,17 +25,16 @@ export const load = async (dir: string) => {
 	let _servers: string[] | null = null;
 	let _outputSubdir: string | null = null;
 
-	const originalCompiled = loadConfig(dir);
+	const compiled = loadConfig(dir)();
 
-	if (!originalCompiled) return (null);
-
-	const compiled = { ...originalCompiled };
+	if (!compiled) return (null);
 
 	compiled.input = {
 		absolute: path.join(dir, compiled.input),
 		relative: compiled.input
 	};
 	compiled.output = {
+		source: path.join(dir, compiled.output),
 		absolute: path.join(dir, compiled.output),
 		relative: compiled.output
 	};
@@ -92,9 +90,10 @@ export const load = async (dir: string) => {
 					};
 
 					const imported = compiled.servers[server_name_output];
+					const imported_compose = imported.compose;
 
-					for (const service_name in imported.compose.services) {
-						const service = imported.compose.services[service_name];
+					for (const service_name in imported_compose.services) {
+						const service = imported_compose.services[service_name];
 						const service_secrets = service.secrets;
 
 						let service_environment = { ...variables };
@@ -172,14 +171,14 @@ export const load = async (dir: string) => {
 						}
 
 						if (secrets.length) {
-							compiled.servers[server_name_output].compose.services[service_name].secrets = secrets;
+							imported_compose.services[service_name].secrets = secrets;
 						}
 					}
 
 					fs.mkdir(path.dirname(compose_file), { recursive: true }, function (err) {
 						if (err) return null;
 		
-						fs.writeFileSync(compose_file, YAML.stringify(compiled.servers[server_name_output].compose));
+						fs.writeFileSync(compose_file, YAML.stringify(imported_compose));
 					});
 				}
 			}

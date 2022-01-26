@@ -19,6 +19,7 @@
 		"moduleResolution": "node",
 		"module": "commonjs",
 		"pretty": true,
+		"types": ["node"],
 		"sourceMap": true,
 		"outDir": "./build",
 		"allowJs": true,
