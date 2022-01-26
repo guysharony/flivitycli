@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const elbv2_1 = __importDefault(require("./elbv2"));
 const secrets_1 = __importDefault(require("./secrets"));
 const mediaConvert_1 = __importDefault(require("./mediaConvert"));
+const s3_1 = __importDefault(require("./s3"));
 ;
 class Amazon {
     constructor() {
@@ -45,6 +46,9 @@ class Amazon {
     async mediaConvert(region) {
         const elbvalue = await mediaConvert_1.default.find(region ? region : this.zone.region);
         return elbvalue;
+    }
+    get s3() {
+        return s3_1.default;
     }
 }
 exports.default = new Amazon();

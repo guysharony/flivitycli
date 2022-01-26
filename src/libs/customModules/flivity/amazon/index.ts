@@ -1,6 +1,7 @@
 import elbv2 from './elbv2';
 import secrets from './secrets';
 import mediaConvert from './mediaConvert';
+import s3 from './s3';
 
 
 interface Zone {
@@ -67,6 +68,10 @@ class Amazon {
 		const elbvalue = await mediaConvert.find(region ? region : this.zone.region);
 
 		return elbvalue;
+	}
+
+	get s3() {
+		return s3;
 	}
 }
 

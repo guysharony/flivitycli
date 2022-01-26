@@ -97,4 +97,11 @@ export const action = async (params: Command) => {
 			execs.execute(`docker image rm ${server_image}`);
 		}
 	}
+
+	execs.display('\nDeploying base files.', false);
+	for (const region_name in server_images) {
+		flivity.amazon.region = region_name;
+
+		console.log(await flivity.amazon.s3.upload(server_configuration[region_name].deploy.output.absolute));
+	}
 };
