@@ -90,7 +90,7 @@ const action = async (params) => {
     for (const region_name in server_images) {
         flivity.amazon.region = region_name;
         for (const server_image of server_images[region_name]) {
-            execs.display(`[${region_name}] => Deploying '${server_image}'.`);
+            execs.display(`=> Deploying '${server_image}'.`);
             // execs.execute(`docker push ${server_image}:latest`);
             execs.execute(`docker image rm ${server_image}`);
         }
@@ -98,7 +98,10 @@ const action = async (params) => {
     execs.display('\nDeploying base files.', false);
     for (const region_name in server_images) {
         flivity.amazon.region = region_name;
-        console.log(await flivity.amazon.s3.upload(server_configuration[region_name].deploy.output.absolute));
+        const region_bucket = `flivity-ec2-${flivity.amazon.zone.city}`;
+        const region_files = server_configuration[region_name].deploy.output.absolute;
+        execs.display(`[${region_bucket}] => Uploading '${region_files}'.`);
+        // await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
     }
 };
 exports.action = action;
