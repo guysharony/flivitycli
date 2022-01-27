@@ -1,5 +1,4 @@
 import path from 'path';
-import { EC2 } from 'aws-sdk';
 import { Command } from 'commander';
 
 import builder from '../../libs/builder';
@@ -29,14 +28,16 @@ export const action = async (params: Command) => {
 
 	const server_images: { [x: string]: string[] } = {};
 	const server_launch_templates: { [x: string]: string } = {};
-	const server_instances: { [x: string]: string } = {};
 	const server_configuration: { [x: string]: { production: any, deploy: any } } = {};
 
-	flivity.amazon.region = 'us-west-2';
 
-	const instanceData = await flivity.amazon.ec2.getInstanceDNSName('us-west-2', 'i-03d2d609a15b03813');
-	console.log('Instance DNS: ', instanceData);
+	await flivity.amazon.ec2.createInstanceImage('us-west-2', {
+		LaunchTemplateID: 'lt-0fe9818c9232d035e',
+		ImageName: 'flivity-website-image-vTest'
+	});
 
+
+	/*
 	execs.display('Creating build.', false);
 	for (const zone in zones) {
 		flivity.amazon.region = zone;
@@ -119,12 +120,12 @@ export const action = async (params: Command) => {
 		flivity.amazon.region = zone;
 
 		execs.display('=> Preparing temporary instance.');
-		server_instances[zone] = await flivity.amazon.ec2.runInstanceFromTemplate(zone, server_launch_templates[zone]);
+		const response = await flivity.amazon.ec2.createInstanceImage(zone, {
+			LaunchTemplateID: server_launch_templates[zone]
+		});
 
-		execs.display(`[${server_instances[zone]}] => Wating for instance to be available.`);
-
-		let instanceData = await flivity.amazon.ec2.getInstanceInformation(zone, server_instances[zone]);
-		
-		console.log('Instance data: ', instanceData);
+		console.log('Response: ', response);
 	}
+
+	*/
 };

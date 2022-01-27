@@ -34,12 +34,7 @@ const display = (value, region = true) => {
 };
 exports.display = display;
 const execute = (command) => {
-    try {
-        child_process_1.default.execSync(command, { stdio: 'pipe' });
-    }
-    catch (e) {
-        console.log('STDERR: ', e);
-    }
+    return child_process_1.default.execSync(command, { encoding: 'utf8', stdio: 'pipe' });
 };
 exports.execute = execute;
 //# sourceMappingURL=execs.js.map

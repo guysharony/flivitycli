@@ -12,9 +12,5 @@ export const display = (value: string, region: boolean = true) => {
 }
 
 export const execute = (command: string) => {
-	try {
-		child_process.execSync(command, { stdio: 'pipe' });
-	} catch (e) {
-		console.log('STDERR: ', e);
-	}
+	return child_process.execSync(command, { encoding: 'utf8', stdio: 'pipe' });
 }
