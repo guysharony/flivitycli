@@ -2,6 +2,7 @@ import elbv2 from './elbv2';
 import secrets from './secrets';
 import mediaConvert from './mediaConvert';
 import s3 from './s3';
+import ec2 from './ec2';
 
 
 interface Zone {
@@ -72,6 +73,10 @@ class Amazon {
 
 	get s3() {
 		return s3;
+	}
+
+	get ec2() {
+		return ec2;
 	}
 }
 

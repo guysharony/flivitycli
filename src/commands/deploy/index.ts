@@ -1,5 +1,5 @@
-import fs from 'fs';
 import path from 'path';
+import { EC2 } from 'aws-sdk';
 import { Command } from 'commander';
 
 import builder from '../../libs/builder';
@@ -12,11 +12,6 @@ export const name = 'deploy';
 
 export const options: CommandOptions = [
 	{
-		flags: '-s, --servers <servers name to deploy>',
-		description: 'define servers for being deployed',
-		defaultValue: '*'
-	},
-	{
 		flags: '-t, --target <project directory>',
 		description: 'define project directory',
 		required: true
@@ -28,12 +23,19 @@ export const description = 'Deploy project to AWS.';
 export const action = async (params: Command) => {
 	const currentOptions = params.opts();
 
-	const requiredServers = currentOptions.servers !== '*' ? currentOptions.servers.split(',') : null;
+	const requiredServers = [ 'website' ];
 
 	const zones = flivity.amazon.zones;
 
 	const server_images: { [x: string]: string[] } = {};
+	const server_launch_templates: { [x: string]: string } = {};
+	const server_instances: { [x: string]: string } = {};
 	const server_configuration: { [x: string]: { production: any, deploy: any } } = {};
+
+	flivity.amazon.region = 'us-west-2';
+
+	const instanceData = await flivity.amazon.ec2.getInstanceDNSName('us-west-2', 'i-03d2d609a15b03813');
+	console.log('Instance DNS: ', instanceData);
 
 	execs.display('Creating build.', false);
 	for (const zone in zones) {
@@ -55,6 +57,9 @@ export const action = async (params: Command) => {
 
 		execs.display('=> Authenticating to Elastic Container Registry.');
 		execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);
+
+		execs.display('=> Verifying launch template.');
+		server_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website-Builder');
 	}
 
 	execs.display('\nBuilding images.', false);
@@ -107,5 +112,19 @@ export const action = async (params: Command) => {
 
 		execs.display(`[${region_bucket}] => Uploading '${region_files}'.`);
 		// await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
+	}
+
+	execs.display('\nBuilding instance image.', false);
+	for (const zone in zones) {
+		flivity.amazon.region = zone;
+
+		execs.display('=> Preparing temporary instance.');
+		server_instances[zone] = await flivity.amazon.ec2.runInstanceFromTemplate(zone, server_launch_templates[zone]);
+
+		execs.display(`[${server_instances[zone]}] => Wating for instance to be available.`);
+
+		let instanceData = await flivity.amazon.ec2.getInstanceInformation(zone, server_instances[zone]);
+		
+		console.log('Instance data: ', instanceData);
 	}
 };

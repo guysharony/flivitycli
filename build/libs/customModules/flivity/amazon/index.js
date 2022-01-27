@@ -7,6 +7,7 @@ const elbv2_1 = __importDefault(require("./elbv2"));
 const secrets_1 = __importDefault(require("./secrets"));
 const mediaConvert_1 = __importDefault(require("./mediaConvert"));
 const s3_1 = __importDefault(require("./s3"));
+const ec2_1 = __importDefault(require("./ec2"));
 ;
 class Amazon {
     constructor() {
@@ -49,6 +50,9 @@ class Amazon {
     }
     get s3() {
         return s3_1.default;
+    }
+    get ec2() {
+        return ec2_1.default;
     }
 }
 exports.default = new Amazon();
