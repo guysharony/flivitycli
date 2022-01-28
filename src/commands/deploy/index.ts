@@ -27,20 +27,10 @@ export const action = async (params: Command) => {
 	const zones = flivity.amazon.zones;
 
 	const server_images: { [x: string]: string[] } = {};
-	const server_launch_templates: { [x: string]: string } = {};
+	const server_builder_launch_templates: { [x: string]: { id: string; version: number; } } = {};
+	const server_production_launch_templates: { [x: string]: { id: string; version: number; } } = {};
 	const server_configuration: { [x: string]: { production: any, deploy: any } } = {};
 
-
-	await flivity.amazon.ec2.createInstanceImage({
-		LaunchTemplateID: {
-			'us-west-2': 'lt-0fe9818c9232d035e',
-			'eu-west-3': 'lt-08634733bfbc09497'
-		},
-		ImageName: 'flivity-website-image-vTest'
-	});
-
-
-	/*
 	execs.display('Creating build.', false);
 	for (const zone in zones) {
 		flivity.amazon.region = zone;
@@ -63,7 +53,8 @@ export const action = async (params: Command) => {
 		execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);
 
 		execs.display('=> Verifying launch template.');
-		server_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website-Builder');
+		server_builder_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website-Builder');
+		server_production_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website');
 	}
 
 	execs.display('\nBuilding images.', false);
@@ -102,7 +93,7 @@ export const action = async (params: Command) => {
 
 		for (const server_image of server_images[region_name]) {
 			execs.display(`=> Uploading '${server_image}'.`);
-			// execs.execute(`docker push ${server_image}:latest`);
+			execs.execute(`docker push ${server_image}:latest`);
 			execs.execute(`docker image rm ${server_image}`);
 		}
 	}
@@ -115,20 +106,14 @@ export const action = async (params: Command) => {
 		const region_files = server_configuration[region_name].deploy.output.absolute;
 
 		execs.display(`[${region_bucket}] => Uploading '${region_files}'.`);
-		// await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
+		await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
 	}
 
 	execs.display('\nBuilding instance image.', false);
-	for (const zone in zones) {
-		flivity.amazon.region = zone;
+	const ImageID = await flivity.amazon.ec2.createInstanceImage(server_builder_launch_templates, 'flivity-website-image-vTest');
 
-		execs.display('=> Preparing temporary instance.');
-		const response = await flivity.amazon.ec2.createInstanceImage(zone, {
-			LaunchTemplateID: server_launch_templates[zone]
-		});
+	execs.display('\nDeploying new image.', false);
+	await flivity.amazon.ec2.updateInstanceImage(server_production_launch_templates, ImageID);
 
-		console.log('Response: ', response);
-	}
-
-	*/
+	execs.display('\nCode deployed successfully.', false);
 };
