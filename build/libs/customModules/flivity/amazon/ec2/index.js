@@ -49,17 +49,24 @@ class KeyPair {
 class ec2 {
     constructor() {
         this.getEC2 = this.getEC2.bind(this);
+        // Launch templates
         this.getLaunchTemplateID = this.getLaunchTemplateID.bind(this);
-        this.runInstanceFromTemplate = this.runInstanceFromTemplate.bind(this);
-        this.getInstanceInformation = this.getInstanceInformation.bind(this);
-        this.getInstanceDNSName = this.getInstanceDNSName.bind(this);
+        // Key pairs
         this.createKeyPair = this.createKeyPair.bind(this);
         this.deleteKeyPair = this.deleteKeyPair.bind(this);
+        // Instances
         this.createInstanceImage = this.createInstanceImage.bind(this);
-        this.terminateInstance = this.terminateInstance.bind(this);
+        this.isInstanceAvailable = this.isInstanceAvailable.bind(this);
+        this.runInstanceFromTemplate = this.runInstanceFromTemplate.bind(this);
+        this.waitForInstanceAvailable = this.waitForInstanceAvailable.bind(this);
+        this.getInstanceInformation = this.getInstanceInformation.bind(this);
+        this.getInstanceDNSName = this.getInstanceDNSName.bind(this);
+        this.deleteInstance = this.deleteInstance.bind(this);
+        // Images
         this.createImageFromInstance = this.createImageFromInstance.bind(this);
-        this.isImageAvailable = this.isImageAvailable.bind(this);
         this.waitForImageAvailable = this.waitForImageAvailable.bind(this);
+        this.isImageAvailable = this.isImageAvailable.bind(this);
+        this.deleteImage = this.deleteImage.bind(this);
     }
     getEC2(region) {
         return new aws_sdk_1.EC2({ region });
@@ -183,7 +190,7 @@ class ec2 {
             }
         });
     }
-    async terminateInstance(region, InstanceId) {
+    async deleteInstance(region, InstanceId) {
         return new Promise((resolve, reject) => {
             this.getEC2(region).terminateInstances({
                 InstanceIds: [InstanceId]
@@ -225,58 +232,163 @@ class ec2 {
             });
         });
     }
-    async waitForImageAvailable(region, ImageId) {
-        try {
-            function sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-            await sleep(10000);
-            if (!await this.isImageAvailable(region, ImageId)) {
-                throw new Error('Not ready');
-            }
-        }
-        catch (e) {
-            console.log('Waiting for image: ', e);
-            await this.waitForImageAvailable(region, ImageId);
-        }
+    async deleteImage(region, ImageId) {
+        return new Promise((resolve, reject) => {
+            this.getEC2(region).deregisterImage({
+                ImageId
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                return resolve(data);
+            });
+        });
     }
-    async createInstanceImage(region, params) {
-        const keyPair = await this.createKeyPair(region, 'ec2-Instance-builder');
-        const instanceID = await this.runInstanceFromTemplate(region, params.LaunchTemplateID, keyPair.name);
-        const instanceDNSName = await this.getInstanceDNSName(region, instanceID);
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms));
-        }
-        const waitForStatus = async (delay) => {
-            if (delay) {
-                console.log('Start waiting instance.');
-                await sleep(delay);
-                console.log('Stop waiting instance.');
+    async waitForImageAvailable(region, ImageId) {
+        const asyncFct = await execs.timer({
+            delay: 900000,
+            retry: {
+                interval: 30000,
+                max: 3
             }
-            const response = execs.execute(`ssh -i ${keyPair.path} -o StrictHostKeyChecking=accept-new ubuntu@${instanceDNSName} 'curl -Is http://127.0.0.1 | head -n 1'`);
-            if (response) {
-                const response_split = response.split(' ');
-                if (response_split.length > 2 && response_split[1] == '200')
-                    return response;
-                await waitForStatus(delay);
-                return;
-            }
+        });
+        return await asyncFct.call(async () => await this.isImageAvailable(region, ImageId));
+    }
+    async isInstanceAvailable(keyPair, DNSName) {
+        const response = execs.execute(`ssh -i ${keyPair} -o StrictHostKeyChecking=accept-new ubuntu@${DNSName} 'curl -Is http://127.0.0.1 | head -n 1'`);
+        if (!response)
             throw new Error(`${response}`);
-        };
+        const response_split = response.split(' ');
+        return (response_split.length > 2 && response_split[1] == '200' ? response : null);
+    }
+    async waitForInstanceAvailable(keyPair, DNSName) {
+        console.log('Waiting for instances...');
+        const asyncFct = await execs.timer({
+            delay: 300000,
+            retry: {
+                interval: 30000,
+                max: 3
+            }
+        });
+        return await asyncFct.call(async () => {
+            for (const region in keyPair) {
+                await this.isInstanceAvailable(keyPair[region].path, DNSName[region]);
+            }
+        });
+    }
+    async createInstanceImage(params) {
+        const launchTemplates = params.LaunchTemplateID;
+        // Creating key paires
+        const keyPairs = {};
         try {
-            await sleep(300000);
-            await waitForStatus(10000);
-            console.log('Creating image from instance.');
-            const imageId = await this.createImageFromInstance(region, params.ImageName, instanceID);
-            console.log('Waiting image to be available.');
-            await this.waitForImageAvailable(region, imageId);
-            console.log('Image is available');
+            for (const region in launchTemplates) {
+                keyPairs[region] = await this.createKeyPair(region, params.ImageName);
+            }
         }
         catch (e) {
-            console.log('CREATE_IMAGE: ', e);
+            for (const region in launchTemplates) {
+                try {
+                    await keyPairs[region].delete();
+                }
+                catch (e) { }
+            }
+            throw new Error('Failed creating key pairs.');
         }
-        await this.terminateInstance(region, instanceID);
-        await keyPair.delete();
+        // Creating instances
+        const instanceID = {};
+        const instanceDNSName = {};
+        try {
+            for (const region in launchTemplates) {
+                instanceID[region] = await this.runInstanceFromTemplate(region, launchTemplates[region], keyPairs[region].name);
+                instanceDNSName[region] = await this.getInstanceDNSName(region, instanceID[region]);
+            }
+        }
+        catch (e) {
+            for (const region in launchTemplates) {
+                try {
+                    await this.deleteInstance(region, instanceID[region]);
+                }
+                catch (e) { }
+                try {
+                    await (keyPairs[region].delete());
+                }
+                catch (e) { }
+            }
+            throw new Error('Failed creating instance.');
+        }
+        // Waiting for instances
+        try {
+            await this.waitForInstanceAvailable(keyPairs, instanceDNSName);
+        }
+        catch (e) {
+            for (const region in launchTemplates) {
+                try {
+                    await this.deleteInstance(region, instanceID[region]);
+                }
+                catch (e) { }
+                try {
+                    await (keyPairs[region].delete());
+                }
+                catch (e) { }
+            }
+            throw new Error('Failed creating instance.');
+        }
+        // Creating images
+        const imageID = {};
+        try {
+            for (const region in launchTemplates) {
+                imageID[region] = await this.createImageFromInstance(region, params.ImageName, instanceID[region]);
+            }
+        }
+        catch (e) {
+            for (const region in launchTemplates) {
+                try {
+                    await this.deleteImage(region, imageID[region]);
+                }
+                catch (e) { }
+                try {
+                    await this.deleteInstance(region, instanceID[region]);
+                }
+                catch (e) { }
+                try {
+                    await (keyPairs[region].delete());
+                }
+                catch (e) { }
+            }
+            throw new Error('Failed creating images.');
+        }
+        // Wait for images
+        try {
+            for (const region in launchTemplates) {
+                await this.waitForImageAvailable(region, imageID[region]);
+            }
+        }
+        catch (e) {
+            for (const region in launchTemplates) {
+                try {
+                    await this.deleteImage(region, imageID[region]);
+                }
+                catch (e) { }
+                try {
+                    await this.deleteInstance(region, instanceID[region]);
+                }
+                catch (e) { }
+                try {
+                    await (keyPairs[region].delete());
+                }
+                catch (e) { }
+            }
+            throw new Error("Failed creating images from instance.");
+        }
+        for (const region in launchTemplates) {
+            try {
+                await this.deleteInstance(region, instanceID[region]);
+            }
+            catch (e) { }
+            try {
+                await (keyPairs[region].delete());
+            }
+            catch (e) { }
+        }
         return;
     }
 }

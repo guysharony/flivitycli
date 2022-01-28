@@ -37,8 +37,11 @@ const action = async (params) => {
     const server_images = {};
     const server_launch_templates = {};
     const server_configuration = {};
-    await flivity.amazon.ec2.createInstanceImage('us-west-2', {
-        LaunchTemplateID: 'lt-0fe9818c9232d035e',
+    await flivity.amazon.ec2.createInstanceImage({
+        LaunchTemplateID: {
+            'us-west-2': 'lt-0fe9818c9232d035e',
+            'eu-west-3': 'lt-08634733bfbc09497'
+        },
         ImageName: 'flivity-website-image-vTest'
     });
     /*
