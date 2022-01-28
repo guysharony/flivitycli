@@ -266,7 +266,7 @@ class ec2 {
 		});
 	}
 
-	async waitForImageAvailable(region: string, ImageId: string) {
+	async waitForImageAvailable(ImageId: { [x: string]: string; }) {
 		const asyncFct = await execs.timer({
 			delay: 900000,
 			retry: {
@@ -275,7 +275,11 @@ class ec2 {
 			}
 		});
 
-		return await asyncFct.call(async () => await this.isImageAvailable(region, ImageId));
+		return await asyncFct.call(async () => {
+			for (const region in ImageId) {
+				await this.isImageAvailable(region, ImageId[region]);
+			}
+		});
 	}
 
 	async isInstanceAvailable(keyPair: string, DNSName: string) {
@@ -380,9 +384,7 @@ class ec2 {
 
 		// Wait for images
 		try {
-			for (const region in launchTemplates) {
-				await this.waitForImageAvailable(region, imageID[region]);
-			}
+			await this.waitForImageAvailable(imageID);
 		} catch (e) {
 			for (const region in launchTemplates) {
 				try { await this.deleteImage(region, imageID[region]); } catch(e) {}
