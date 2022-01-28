@@ -49,8 +49,16 @@ class KeyPair {
 class ec2 {
     constructor() {
         this.getEC2 = this.getEC2.bind(this);
+        this.getAutoScaling = this.getAutoScaling.bind(this);
+        // AutoScaling
+        this.startInstanceRefresh = this.startInstanceRefresh.bind(this);
         // Launch templates
+        this.updateInstanceImage = this.updateInstanceImage.bind(this);
         this.getLaunchTemplateID = this.getLaunchTemplateID.bind(this);
+        this.modifyLaunchTemplate = this.modifyLaunchTemplate.bind(this);
+        this.createLaunchTemplateVersion = this.createLaunchTemplateVersion.bind(this);
+        this.getLatestLaunchTemplatesVersion = this.getLatestLaunchTemplatesVersion.bind(this);
+        this.deleteLaunchTemplateVersions = this.deleteLaunchTemplateVersions.bind(this);
         // Key pairs
         this.createKeyPair = this.createKeyPair.bind(this);
         this.deleteKeyPair = this.deleteKeyPair.bind(this);
@@ -71,6 +79,9 @@ class ec2 {
     getEC2(region) {
         return new aws_sdk_1.EC2({ region });
     }
+    getAutoScaling(region) {
+        return new aws_sdk_1.AutoScaling({ region });
+    }
     async getLaunchTemplateID(region, LaunchTemplateName) {
         return new Promise((resolve, reject) => {
             this.getEC2(region).describeLaunchTemplates({
@@ -88,9 +99,13 @@ class ec2 {
                     && data.LaunchTemplates.length == 1))
                     return reject(new Error(`Launch template '${LaunchTemplateName}' is unknown.`));
                 const templateID = data.LaunchTemplates[0].LaunchTemplateId;
-                if (!templateID)
+                const templateDefaultVersion = data.LaunchTemplates[0].DefaultVersionNumber;
+                if (!(templateID && templateDefaultVersion))
                     return reject(new Error(`Launch template '${LaunchTemplateName}' doesn't have a templateID.`));
-                return resolve(templateID);
+                return resolve({
+                    id: templateID,
+                    version: templateDefaultVersion
+                });
             });
         });
     }
@@ -243,7 +258,7 @@ class ec2 {
             });
         });
     }
-    async waitForImageAvailable(region, ImageId) {
+    async waitForImageAvailable(ImageId) {
         const asyncFct = await execs.timer({
             delay: 900000,
             retry: {
@@ -251,7 +266,11 @@ class ec2 {
                 max: 3
             }
         });
-        return await asyncFct.call(async () => await this.isImageAvailable(region, ImageId));
+        return await asyncFct.call(async () => {
+            for (const region in ImageId) {
+                await this.isImageAvailable(region, ImageId[region]);
+            }
+        });
     }
     async isInstanceAvailable(keyPair, DNSName) {
         const response = execs.execute(`ssh -i ${keyPair} -o StrictHostKeyChecking=accept-new ubuntu@${DNSName} 'curl -Is http://127.0.0.1 | head -n 1'`);
@@ -275,13 +294,13 @@ class ec2 {
             }
         });
     }
-    async createInstanceImage(params) {
-        const launchTemplates = params.LaunchTemplateID;
+    async createInstanceImage(LaunchTemplateID, ImageName) {
+        const launchTemplates = LaunchTemplateID;
         // Creating key paires
         const keyPairs = {};
         try {
             for (const region in launchTemplates) {
-                keyPairs[region] = await this.createKeyPair(region, params.ImageName);
+                keyPairs[region] = await this.createKeyPair(region, ImageName);
             }
         }
         catch (e) {
@@ -298,7 +317,7 @@ class ec2 {
         const instanceDNSName = {};
         try {
             for (const region in launchTemplates) {
-                instanceID[region] = await this.runInstanceFromTemplate(region, launchTemplates[region], keyPairs[region].name);
+                instanceID[region] = await this.runInstanceFromTemplate(region, launchTemplates[region].id, keyPairs[region].name);
                 instanceDNSName[region] = await this.getInstanceDNSName(region, instanceID[region]);
             }
         }
@@ -336,7 +355,7 @@ class ec2 {
         const imageID = {};
         try {
             for (const region in launchTemplates) {
-                imageID[region] = await this.createImageFromInstance(region, params.ImageName, instanceID[region]);
+                imageID[region] = await this.createImageFromInstance(region, ImageName, instanceID[region]);
             }
         }
         catch (e) {
@@ -358,9 +377,7 @@ class ec2 {
         }
         // Wait for images
         try {
-            for (const region in launchTemplates) {
-                await this.waitForImageAvailable(region, imageID[region]);
-            }
+            await this.waitForImageAvailable(imageID);
         }
         catch (e) {
             for (const region in launchTemplates) {
@@ -389,7 +406,126 @@ class ec2 {
             }
             catch (e) { }
         }
-        return;
+        return imageID;
+    }
+    async getLatestLaunchTemplateVersion(region, LaunchTemplateId) {
+        return new Promise((resolve, reject) => {
+            this.getEC2(region).describeLaunchTemplateVersions({
+                LaunchTemplateId
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                const versions = data.LaunchTemplateVersions;
+                if (!(versions && versions.length))
+                    return reject(`Can retreive launch template latest version.`);
+                return resolve(versions.filter(version => version.DefaultVersion)[0]);
+            });
+        });
+    }
+    async getLatestLaunchTemplatesVersion(LaunchTemplateID) {
+        const launchTemplate = {};
+        for (const region in LaunchTemplateID) {
+            const template = await this.getLatestLaunchTemplateVersion(region, LaunchTemplateID[region]);
+            if (!template.VersionNumber)
+                throw new Error(`Can't retreive launch template.`);
+            launchTemplate[region] = {
+                version: template.VersionNumber,
+                id: LaunchTemplateID[region]
+            };
+        }
+        return launchTemplate;
+    }
+    async getLaunchTemplateLatestVersion(LaunchTemplateID) {
+        const launchTemplate = {};
+        for (const region in LaunchTemplateID) {
+            const SourceVersion = (await this.getLatestLaunchTemplateVersion(region, LaunchTemplateID[region])).VersionNumber;
+            if (!SourceVersion)
+                throw new Error(`Can't retreive version.`);
+            launchTemplate[region] = {
+                version: SourceVersion,
+                id: LaunchTemplateID[region]
+            };
+        }
+        return launchTemplate;
+    }
+    async modifyLaunchTemplate(region, LaunchTemplateID) {
+        return new Promise((resolve, reject) => {
+            this.getEC2(region).modifyLaunchTemplate({
+                DefaultVersion: LaunchTemplateID.version.toString(),
+                LaunchTemplateId: LaunchTemplateID.id
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                return resolve(data);
+            });
+        });
+    }
+    async createLaunchTemplateVersion(region, LaunchTemplateID) {
+        return new Promise((resolve, reject) => {
+            this.getEC2(region).createLaunchTemplateVersion({
+                LaunchTemplateData: {
+                    ImageId: LaunchTemplateID.image
+                },
+                LaunchTemplateId: LaunchTemplateID.id,
+                SourceVersion: LaunchTemplateID.version.toString()
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                return resolve(data);
+            });
+        });
+    }
+    async deleteLaunchTemplateVersions(region, LaunchTemplateID) {
+        return new Promise((resolve, reject) => {
+            this.getEC2(region).deleteLaunchTemplateVersions({
+                LaunchTemplateId: LaunchTemplateID.id,
+                Versions: [
+                    LaunchTemplateID.id.toString()
+                ]
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                return resolve(data);
+            });
+        });
+    }
+    async startInstanceRefresh(region, AutoScalingGroupName) {
+        return new Promise((resolve, reject) => {
+            this.getAutoScaling(region).startInstanceRefresh({
+                AutoScalingGroupName,
+                Preferences: {
+                    InstanceWarmup: 300,
+                    MinHealthyPercentage: 100
+                }
+            }, (err, data) => {
+                if (err)
+                    return reject(err);
+                return resolve(data);
+            });
+        });
+    }
+    async updateInstanceImage(LaunchTemplate, ImageID) {
+        try {
+            for (const region in LaunchTemplate) {
+                await this.createLaunchTemplateVersion(region, Object.assign(Object.assign({}, LaunchTemplate[region]), { image: ImageID[region] }));
+                await this.modifyLaunchTemplate(region, LaunchTemplate[region]);
+            }
+        }
+        catch (e) {
+            for (const region in LaunchTemplate) {
+                try {
+                    await this.modifyLaunchTemplate(region, Object.assign(Object.assign({}, LaunchTemplate[region]), { version: LaunchTemplate[region].version - 1 }));
+                }
+                catch (e) { }
+                try {
+                    await this.deleteLaunchTemplateVersions(region, LaunchTemplate[region]);
+                }
+                catch (e) { }
+            }
+        }
+        for (const region in LaunchTemplate) {
+            await this.startInstanceRefresh(region, 'Flivity-Website');
+        }
     }
 }
 exports.default = new ec2();
