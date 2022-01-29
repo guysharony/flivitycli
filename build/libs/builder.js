@@ -44,6 +44,8 @@ async function default_1(target, mode, options) {
         configuration.servers = options.servers;
     if (options === null || options === void 0 ? void 0 : options.outputSubdir)
         configuration.outputSubdir = options.outputSubdir;
+    if (options === null || options === void 0 ? void 0 : options.watchFiles)
+        configuration.watchFiles = options.watchFiles;
     try {
         return await configuration.apply({
             flivity: {

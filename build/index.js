@@ -24,8 +24,7 @@ const commands = __importStar(require("./commands/index"));
 async function app() {
     commands.name("flivitycli");
     try {
-        await commands.create('auth');
-        await commands.create('build');
+        await commands.create('run');
         await commands.create('deploy');
         commands.execute();
     }

@@ -55,11 +55,14 @@ const timer = async (params = {}) => {
     };
 };
 exports.timer = timer;
-const display = (value, region = true) => {
+function display(arg1, arg2) {
+    const region = arg2 && typeof (arg2) == 'boolean';
     const zone = flivity.amazon.zone;
-    const output = `${region ? `[${zone.region}] ` : ''}${value}`;
-    return console.log(output[zone.color && region ? zone.color : 'white']);
-};
+    const output = `${region ? `[${zone.region}] ` : ''}${arg1}`;
+    if (zone.color && region)
+        return console.log(output[zone.color]);
+    return console.log(output);
+}
 exports.display = display;
 const execute = (command) => {
     return child_process_1.default.execSync(command, { encoding: 'utf8', stdio: 'pipe' });

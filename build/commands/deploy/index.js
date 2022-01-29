@@ -44,11 +44,11 @@ const action = async (params) => {
     const server_builder_launch_templates = {};
     const server_production_launch_templates = {};
     const server_configuration = {};
-    execs.display('Creating build.', false);
+    execs.display('Creating build.');
     for (const zone in zones) {
         flivity.amazon.region = zone;
         const server_target = path_1.default.join(process.cwd(), currentOptions.target);
-        execs.display('=> Creating configurations.');
+        execs.display('=> Creating configurations.', true);
         server_configuration[zone] = {
             production: await (0, builder_1.default)(server_target, 'production', {
                 servers: requiredServers,
@@ -59,13 +59,13 @@ const action = async (params) => {
                 outputSubdir: path_1.default.join('deploy', zone)
             })
         };
-        execs.display('=> Authenticating to Elastic Container Registry.');
+        execs.display('=> Authenticating to Elastic Container Registry.', true);
         execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);
-        execs.display('=> Verifying launch template.');
+        execs.display('=> Verifying launch template.', true);
         server_builder_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website-Builder');
         server_production_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website');
     }
-    execs.display('\nBuilding images.', false);
+    execs.display('\nBuilding images.');
     for (const zone in zones) {
         server_images[zone] = [];
         flivity.amazon.region = zone;
@@ -73,7 +73,7 @@ const action = async (params) => {
         for (const server_name in configuration.servers) {
             const services = configuration.servers[server_name].compose.services;
             for (const service_name in services) {
-                execs.display(`[${server_name}] => Building '${service_name}'.`);
+                execs.display(`[${server_name}] => Building '${service_name}'.`, true);
                 const service = services[service_name];
                 if (!('build' in service && service.build))
                     throw new Error(`build for '${service_name}' not found.`);
@@ -86,29 +86,29 @@ const action = async (params) => {
             }
         }
     }
-    execs.display('\nUploading images to Elastic Container Registry.', false);
+    execs.display('\nUploading images to Elastic Container Registry.');
     for (const region_name in server_images) {
         flivity.amazon.region = region_name;
         for (const server_image of server_images[region_name]) {
-            execs.display(`=> Uploading '${server_image}'.`);
+            execs.display(`=> Uploading '${server_image}'.`, true);
             execs.execute(`docker push ${server_image}:latest`);
             execs.execute(`docker image rm ${server_image}`);
         }
     }
-    execs.display('\nUploading base files.', false);
+    execs.display('\nUploading base files.');
     for (const region_name in server_images) {
         flivity.amazon.region = region_name;
         const region_bucket = `flivity-ec2-${flivity.amazon.zone.city}`;
         const region_files = server_configuration[region_name].deploy.output.absolute;
-        execs.display(`[${region_bucket}] => Uploading '${region_files}'.`);
+        execs.display(`[${region_bucket}] => Uploading '${region_files}'.`, true);
         await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
     }
-    execs.display('\nBuilding instance image.', false);
+    execs.display('\nBuilding instance image.');
     const latestTemplateVersion = server_production_launch_templates['us-west-2'].version + 1;
     const ImageID = await flivity.amazon.ec2.createInstanceImage(server_builder_launch_templates, `flivity-website-image-v${latestTemplateVersion.toString()}`);
-    execs.display('\nDeploying new image.', false);
+    execs.display('\nDeploying new image.');
     await flivity.amazon.ec2.updateInstanceImage(server_production_launch_templates, ImageID);
-    execs.display('\nCode deployed successfully.', false);
+    execs.display('\nCode deployed successfully.');
 };
 exports.action = action;
 //# sourceMappingURL=index.js.map

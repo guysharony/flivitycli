@@ -1,4 +1,4 @@
-import colors from 'colors';
+import colors, { Color } from 'colors';
 import child_process from 'child_process';
 import * as flivity from './customModules/flivity';
 
@@ -11,6 +11,9 @@ interface Timer {
 		max?: number;
 	};
 };
+
+type DisplayColor = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white';
+
 
 export const sleep = (ms: number) => {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -43,11 +46,17 @@ export const timer = async <T>(params: Timer = {}): Promise<{ call(callback: () 
 	};
 }
 
-export const display = (value: string, region: boolean = true) => {
-	const zone = flivity.amazon.zone;
-	const output = `${region ? `[${zone.region}] ` : ''}${value}`;
+export function display(value: string): void;
+export function display(value: string, region?: boolean): void;
+export function display(arg1: any, arg2?: any): void {
+	const region = arg2 && typeof(arg2) == 'boolean';
 
-	return console.log(output[zone.color && region ? zone.color : 'white']);
+	const zone = flivity.amazon.zone;
+	const output = `${region ? `[${zone.region}] ` : ''}${arg1}`;
+
+	if (zone.color && region) return console.log(output[zone.color]);
+
+	return console.log(output);
 }
 
 export const execute = (command: string) => {

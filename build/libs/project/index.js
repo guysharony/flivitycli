@@ -41,6 +41,7 @@ const loadConfig = (dir) => {
 const load = async (dir) => {
     let _servers = null;
     let _outputSubdir = null;
+    let _watchFiles = false;
     const compiled = loadConfig(dir)();
     if (!compiled)
         return (null);
@@ -76,6 +77,9 @@ const load = async (dir) => {
         set outputSubdir(value) {
             _outputSubdir = value;
         },
+        set watchFiles(value) {
+            _watchFiles = value;
+        },
         apply: async (vars = {}) => {
             if (_outputSubdir) {
                 compiled.output.absolute = path_1.default.join(compiled.output.absolute, _outputSubdir);
@@ -83,20 +87,19 @@ const load = async (dir) => {
             }
             let variables = parseVariables(vars);
             fs_1.default.rmSync(compiled.output.absolute, { recursive: true, force: true });
-            for (const server_name_output in compiled.servers) {
-                const allowed_server = !_servers || _servers.includes(server_name_output);
+            for (const server of compiled.servers) {
+                const server_name = server.name;
+                const allowed_server = !_servers || _servers.includes(server_name);
                 if (!allowed_server)
-                    delete compiled.servers[server_name_output];
+                    delete compiled.servers[server_name];
                 else {
-                    const server = compiled.servers[server_name_output];
-                    const server_name_input = 'source' in server ? server.source : server_name_output;
-                    const compose_file = path_1.default.join(compiled.output.absolute, server_name_output, server.file);
+                    const server_source = 'source' in server ? server.source : server_name;
+                    const compose_file = path_1.default.join(compiled.output.absolute, server_name, server.file);
                     const secrets_dir = {
                         relative: path_1.default.join(server.secrets),
-                        absolute: path_1.default.join(compiled.output.absolute, server_name_output, server.secrets)
+                        absolute: path_1.default.join(compiled.output.absolute, server_name, server.secrets)
                     };
-                    const imported = compiled.servers[server_name_output];
-                    const imported_compose = imported.compose;
+                    const imported_compose = server.compose;
                     for (const service_name in imported_compose.services) {
                         const service = imported_compose.services[service_name];
                         const service_secrets = service.secrets;
@@ -109,13 +112,16 @@ const load = async (dir) => {
                             }));
                         }
                         if ('build' in service) {
-                            const inputContext = path_1.default.join(compiled.input.absolute, server_name_input, service.build.context);
-                            const outputContext = path_1.default.join(compiled.output.absolute, server_name_output, service.build.context);
-                            await files.replaceVars(inputContext, outputContext, service_environment);
+                            const inputContext = path_1.default.join(compiled.input.absolute, server_source, service.build.context);
+                            const outputContext = path_1.default.join(compiled.output.absolute, server_name, service.build.context);
+                            await files.replaceVars(inputContext, outputContext, {
+                                vars: service_environment,
+                                watch: _watchFiles
+                            });
                         }
                         if (service.environment) {
                             const env_file_relative = path_1.default.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
-                            const env_file_absolute = path_1.default.join(compiled.output.absolute, server_name_output, env_file_relative);
+                            const env_file_absolute = path_1.default.join(compiled.output.absolute, server_name, env_file_relative);
                             const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
                                 const env_value_func = async () => { return await v; };
                                 return `${k}=${(await env_value_func())}`;
@@ -140,9 +146,9 @@ const load = async (dir) => {
                                     const secret_value_func = async () => { return await service_secrets[secret_name]; };
                                     const secret_value = await secret_value_func();
                                     fs_1.default.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? (0, serialize_javascript_1.default)(secret_value) : `${secret_value}`);
-                                    if (!('secrets' in imported.compose))
-                                        compiled.servers[server_name_output].compose['secrets'] = {};
-                                    compiled.servers[server_name_output].compose.secrets[compose_secret_name] = { file: secret_relative };
+                                    if (!('secrets' in imported_compose))
+                                        server.compose['secrets'] = {};
+                                    imported_compose.secrets[compose_secret_name] = { file: secret_relative };
                                     secrets.push(compose_secret_name);
                                     return resolve(compose_secret_name);
                                 });

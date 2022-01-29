@@ -24,6 +24,7 @@ const loadConfig = (dir: string) => {
 export const load = async (dir: string) => {
 	let _servers: string[] | null = null;
 	let _outputSubdir: string | null = null;
+	let _watchFiles: boolean | ((path: string) => void) = false;
 
 	const compiled = loadConfig(dir)();
 
@@ -66,6 +67,9 @@ export const load = async (dir: string) => {
 		set outputSubdir(value: string | null) {
 			_outputSubdir = value;
 		},
+		set watchFiles(value: boolean | ((path: string) => void)) {
+			_watchFiles = value;
+		},
 		apply: async (vars: Vars = {}) => {
 			if (_outputSubdir) {
 				compiled.output.absolute = path.join(compiled.output.absolute, _outputSubdir);
@@ -76,21 +80,20 @@ export const load = async (dir: string) => {
 
 			fs.rmSync(compiled.output.absolute, { recursive: true, force: true });
 
-			for (const server_name_output in compiled.servers) {
-				const allowed_server = !_servers || _servers.includes(server_name_output);
+			for (const server of compiled.servers) {
+				const server_name = server.name;
+				const allowed_server = !_servers || _servers.includes(server_name);
 
-				if (!allowed_server) delete compiled.servers[server_name_output];
+				if (!allowed_server) delete compiled.servers[server_name];
 				else {
-					const server = compiled.servers[server_name_output];
-					const server_name_input = 'source' in server ? server.source : server_name_output;
-					const compose_file = path.join(compiled.output.absolute, server_name_output, server.file);
+					const server_source = 'source' in server ? server.source : server_name;
+					const compose_file = path.join(compiled.output.absolute, server_name, server.file);
 					const secrets_dir = {
 						relative: path.join(server.secrets),
-						absolute: path.join(compiled.output.absolute, server_name_output, server.secrets)
+						absolute: path.join(compiled.output.absolute, server_name, server.secrets)
 					};
 
-					const imported = compiled.servers[server_name_output];
-					const imported_compose = imported.compose;
+					const imported_compose = server.compose;
 
 					for (const service_name in imported_compose.services) {
 						const service = imported_compose.services[service_name];
@@ -110,15 +113,18 @@ export const load = async (dir: string) => {
 						}
 
 						if ('build' in service) {
-							const inputContext = path.join(compiled.input.absolute, server_name_input, service.build.context);
-							const outputContext = path.join(compiled.output.absolute, server_name_output, service.build.context);
+							const inputContext = path.join(compiled.input.absolute, server_source, service.build.context);
+							const outputContext = path.join(compiled.output.absolute, server_name, service.build.context);
 
-							await files.replaceVars(inputContext, outputContext, service_environment);
+							await files.replaceVars(inputContext, outputContext, {
+								vars: service_environment,
+								watch: _watchFiles
+							});
 						}
 
 						if (service.environment) {
 							const env_file_relative = path.join('build' in service ? service.build.context : `./services/${service.container_name}/`, 'env');
-							const env_file_absolute = path.join(compiled.output.absolute, server_name_output, env_file_relative);
+							const env_file_absolute = path.join(compiled.output.absolute, server_name, env_file_relative);
 
 							const env_data = (await Promise.all(Object.entries(service.environment).map(async ([k, v]) => {
 								const env_value_func = async () => { return await v; };
@@ -158,8 +164,8 @@ export const load = async (dir: string) => {
 
 									fs.writeFileSync(secret_absolute, (!['string', 'number'].includes(typeof secret_value)) ? serialize(secret_value) : `${secret_value}`);
 
-									if (!('secrets' in imported.compose)) compiled.servers[server_name_output].compose['secrets'] = {};
-									compiled.servers[server_name_output].compose.secrets[compose_secret_name] = { file: secret_relative };
+									if (!('secrets' in imported_compose)) server.compose['secrets'] = {};
+									imported_compose.secrets[compose_secret_name] = { file: secret_relative };
 
 									secrets.push(compose_secret_name);
 

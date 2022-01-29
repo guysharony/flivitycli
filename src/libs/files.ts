@@ -11,7 +11,7 @@ interface Vars {
 
 export const readFile = util.promisify(fs.readFile);
 
-export const replaceVars = async (src: string, dest: string, vars: Vars) => {
+export const replaceVars = async (src: string, dest: string, options?: { vars: Vars, watch: boolean | ((path: string) => void) }) => {
 	const manage = async (baseDir: string) => {
 		const files = fs.readdirSync(baseDir);
 
@@ -23,23 +23,43 @@ export const replaceVars = async (src: string, dest: string, vars: Vars) => {
 				manage(fullPath);
 			}
 
-			if (fullPathType.isFile() && ['.mjs', '.js', '.css', '.html'].includes(path.extname(file))) {
-				const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
+			if (fullPathType.isFile()) {
+				const secureCopy = async () => {
+					const destDir = fullPath.replace(new RegExp(`^(${src})`, 'g'), dest);
 
-				let data = fse.readFileSync(destDir, 'utf-8');
+					fse.copySync(fullPath, destDir);
 
-				await Promise.all(Object.entries(vars).map(async ([key, value]) => {
-					value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
+					if (options?.vars && ['.ts', '.jsx', '.js', '.css', '.html'].includes(path.extname(file))) {
+						let data = fse.readFileSync(destDir, 'utf-8');
+		
+						await Promise.all(Object.entries(options.vars).map(async ([key, value]) => {
+							value = (!['string', 'number'].includes(typeof value)) ? serialize(value) : value;
+		
+							data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
+						}));
+		
+						fs.writeFileSync(destDir, data);
+					}
+				}
 
-					data = data.replace(new RegExp(`%__${key.toLowerCase()}__%`, 'g'), value);
-				}));
+				await secureCopy();
 
-				fs.writeFileSync(destDir, data);
+				fs.watchFile(fullPath, {
+					bigint: false,
+					persistent: true,
+					interval: 1000,
+				},
+				async function (curr, prev) {
+					await secureCopy();
+
+					if (typeof options?.watch == 'function') options?.watch(fullPath);
+					else {
+						console.log(`File '${fullPath}' has changed.`);
+					}
+				});
 			}
 		}
 	};
-
-	fse.copySync(src, dest);
 
 	await manage(src);
 }
