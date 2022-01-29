@@ -52,6 +52,8 @@ export const replaceVars = async (src: string, dest: string, options?: { vars: V
 				async function (curr, prev) {
 					await secureCopy();
 
+					console.log(typeof options?.watch);
+
 					if (typeof options?.watch == 'function') options?.watch(fullPath);
 					else {
 						console.log(`File '${fullPath}' has changed.`);

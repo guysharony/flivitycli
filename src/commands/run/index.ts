@@ -31,7 +31,7 @@ export const action = async (params: Command) => {
 	execs.display('Initializing project.');
 	execs.display('=> Creating files.'.blue);
 	const result = await builder(path.join(process.cwd(), currentOptions.target), 'development', {
-		watchFiles: (path: string) => {
+		watch: (path: string) => {
 			execs.display(`=> File '${path}' has been changed.`);
 		}
 	});

@@ -24,7 +24,7 @@ const loadConfig = (dir: string) => {
 export const load = async (dir: string) => {
 	let _servers: string[] | null = null;
 	let _outputSubdir: string | null = null;
-	let _watchFiles: boolean | ((path: string) => void) = false;
+	let _watch: boolean | ((path: string) => void) = false;
 
 	const compiled = loadConfig(dir)();
 
@@ -67,8 +67,8 @@ export const load = async (dir: string) => {
 		set outputSubdir(value: string | null) {
 			_outputSubdir = value;
 		},
-		set watchFiles(value: boolean | ((path: string) => void)) {
-			_watchFiles = value;
+		set watch(value: boolean | ((path: string) => void)) {
+			_watch = value;
 		},
 		apply: async (vars: Vars = {}) => {
 			if (_outputSubdir) {
@@ -118,7 +118,7 @@ export const load = async (dir: string) => {
 
 							await files.replaceVars(inputContext, outputContext, {
 								vars: service_environment,
-								watch: _watchFiles
+								watch: _watch
 							});
 						}
 

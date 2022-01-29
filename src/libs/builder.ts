@@ -7,7 +7,7 @@ import { ServerModes } from './customModules/flivity/server';
 interface Options {
 	servers?: string[];
 	outputSubdir?: string;
-	watchFiles?: boolean | ((path: string) => void);
+	watch?: boolean | ((path: string) => void);
 }
 
 export default async function (target: string, mode: ServerModes, options?: Options) {
@@ -31,7 +31,7 @@ export default async function (target: string, mode: ServerModes, options?: Opti
 
 	if (options?.servers) configuration.servers = options.servers;
 	if (options?.outputSubdir) configuration.outputSubdir = options.outputSubdir;
-	if (options?.watchFiles) configuration.watchFiles = options.watchFiles;
+	if (options?.watch) configuration.watch = options.watch;
 
 	try {
 		return await configuration.apply({
