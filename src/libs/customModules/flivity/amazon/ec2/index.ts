@@ -288,14 +288,19 @@ class ec2 {
 			delay: 900000,
 			retry: {
 				interval: 30000,
-				max: 3
+				max: 5
 			}
 		});
 
 		return await asyncFct.call(async () => {
+			let result = true;
+
 			for (const region in ImageId) {
-				await this.isImageAvailable(region, ImageId[region]);
+				if (!await this.isImageAvailable(region, ImageId[region]))
+					result = false;
 			}
+
+			return (result);
 		});
 	}
 
@@ -311,20 +316,23 @@ class ec2 {
 	}
 
 	async waitForInstanceAvailable(keyPair: { [x: string]: KeyPair; }, DNSName: { [x: string]: string; }) {
-		console.log('Waiting for instances...');
-
 		const asyncFct = await execs.timer({
 			delay: 300000,
 			retry: {
 				interval: 30000,
-				max: 3
+				max: 10
 			}
 		});
 
 		return await asyncFct.call(async () => {
+			let result = true;
+
 			for (const region in keyPair) {
-				await this.isInstanceAvailable(keyPair[region].path, DNSName[region]);
+				if (!await this.isInstanceAvailable(keyPair[region].path, DNSName[region]))
+					result = false;
 			}
+
+			return result;
 		});
 	}
 
@@ -359,6 +367,8 @@ class ec2 {
 				instanceDNSName[region] = await this.getInstanceDNSName(region, instanceID[region]);
 			}
 		} catch (e) {
+			console.log(e);
+
 			for (const region in launchTemplates) {
 				try { await this.deleteInstance(region, instanceID[region]); } catch(e) {}
 				try { await (keyPairs[region].delete()); } catch(e) {}
@@ -372,6 +382,8 @@ class ec2 {
 		try {
 			await this.waitForInstanceAvailable(keyPairs, instanceDNSName);
 		} catch (e) {
+			console.log(e);
+
 			for (const region in launchTemplates) {
 				try { await this.deleteInstance(region, instanceID[region]); } catch(e) {}
 				try { await (keyPairs[region].delete()); } catch(e) {}
@@ -389,6 +401,8 @@ class ec2 {
 				imageID[region] = await this.createImageFromInstance(region, ImageName, instanceID[region]);
 			}
 		} catch (e) {
+			console.log(e);
+
 			for (const region in launchTemplates) {
 				try { await this.deleteImage(region, imageID[region]); } catch(e) {}
 				try { await this.deleteInstance(region, instanceID[region]); } catch(e) {}
@@ -497,7 +511,7 @@ class ec2 {
 		});
 	}
 
-	async createLaunchTemplateVersion(region: string, LaunchTemplateID: { version: number; id: string; image: string }): Promise<EC2.CreateLaunchTemplateVersionResult> {
+	async createLaunchTemplateVersion(region: string, LaunchTemplateID: { version: number; id: string; image: string }): Promise<number> {
 		return new Promise((resolve, reject) => {
 			this.getEC2(region).createLaunchTemplateVersion({
 				LaunchTemplateData: {
@@ -508,8 +522,12 @@ class ec2 {
 			}, (err, data) => {
 				if (err)
 					return reject(err);
-	
-				return resolve(data);
+
+				const createdVersion = data.LaunchTemplateVersion?.VersionNumber;
+				if (!createdVersion)
+					return reject(new Error(`Couldn't create a new version.`));
+
+				return resolve(createdVersion);
 			});
 		});
 	}
@@ -550,21 +568,29 @@ class ec2 {
 	async updateInstanceImage(LaunchTemplate: { [x: string]: { version: number; id: string; }; }, ImageID: { [x: string]: string; }) {
 		try {
 			for (const region in LaunchTemplate) {
-				await this.createLaunchTemplateVersion(region, {
-					...LaunchTemplate[region],
-					image: ImageID[region]
+				const template = LaunchTemplate[region];
+
+				await this.modifyLaunchTemplate(region, {
+					...template,
+					version: await this.createLaunchTemplateVersion(region, {
+						...template,
+						image: ImageID[region]
+					})
 				});
-				await this.modifyLaunchTemplate(region, LaunchTemplate[region]);
 			}
 		} catch (e) {
+			console.log(e);
+
 			for (const region in LaunchTemplate) {
+				const template = LaunchTemplate[region];
+
 				try {
 					await this.modifyLaunchTemplate(region, {
-						...LaunchTemplate[region],
-						version: LaunchTemplate[region].version - 1
+						...template,
+						version: template.version
 					});
 				} catch (e) {}
-				try { await this.deleteLaunchTemplateVersions(region, LaunchTemplate[region]); } catch(e) {}
+				try { await this.deleteLaunchTemplateVersions(region, template); } catch(e) {}
 			}
 		}
 

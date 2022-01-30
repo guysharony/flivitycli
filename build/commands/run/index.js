@@ -45,7 +45,7 @@ const action = async (params) => {
     execs.display('Initializing project.');
     execs.display('=> Creating files.'.blue);
     const result = await (0, builder_1.default)(path_1.default.join(process.cwd(), currentOptions.target), 'development', {
-        watchFiles: (path) => {
+        watch: (path) => {
             execs.display(`=> File '${path}' has been changed.`);
         }
     });

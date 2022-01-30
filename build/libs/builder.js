@@ -40,12 +40,10 @@ async function default_1(target, mode, options) {
     const configuration = await project.load(target);
     if (!configuration)
         return (null);
-    if (options === null || options === void 0 ? void 0 : options.servers)
-        configuration.servers = options.servers;
     if (options === null || options === void 0 ? void 0 : options.outputSubdir)
         configuration.outputSubdir = options.outputSubdir;
-    if (options === null || options === void 0 ? void 0 : options.watchFiles)
-        configuration.watchFiles = options.watchFiles;
+    if (options === null || options === void 0 ? void 0 : options.watch)
+        configuration.watch = options.watch;
     try {
         return await configuration.apply({
             flivity: {

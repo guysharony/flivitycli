@@ -263,13 +263,16 @@ class ec2 {
             delay: 900000,
             retry: {
                 interval: 30000,
-                max: 3
+                max: 5
             }
         });
         return await asyncFct.call(async () => {
+            let result = true;
             for (const region in ImageId) {
-                await this.isImageAvailable(region, ImageId[region]);
+                if (!await this.isImageAvailable(region, ImageId[region]))
+                    result = false;
             }
+            return (result);
         });
     }
     async isInstanceAvailable(keyPair, DNSName) {
@@ -280,18 +283,20 @@ class ec2 {
         return (response_split.length > 2 && response_split[1] == '200' ? response : null);
     }
     async waitForInstanceAvailable(keyPair, DNSName) {
-        console.log('Waiting for instances...');
         const asyncFct = await execs.timer({
             delay: 300000,
             retry: {
                 interval: 30000,
-                max: 3
+                max: 10
             }
         });
         return await asyncFct.call(async () => {
+            let result = true;
             for (const region in keyPair) {
-                await this.isInstanceAvailable(keyPair[region].path, DNSName[region]);
+                if (!await this.isInstanceAvailable(keyPair[region].path, DNSName[region]))
+                    result = false;
             }
+            return result;
         });
     }
     async createInstanceImage(LaunchTemplateID, ImageName) {
@@ -322,6 +327,7 @@ class ec2 {
             }
         }
         catch (e) {
+            console.log(e);
             for (const region in launchTemplates) {
                 try {
                     await this.deleteInstance(region, instanceID[region]);
@@ -339,6 +345,7 @@ class ec2 {
             await this.waitForInstanceAvailable(keyPairs, instanceDNSName);
         }
         catch (e) {
+            console.log(e);
             for (const region in launchTemplates) {
                 try {
                     await this.deleteInstance(region, instanceID[region]);
@@ -359,6 +366,7 @@ class ec2 {
             }
         }
         catch (e) {
+            console.log(e);
             for (const region in launchTemplates) {
                 try {
                     await this.deleteImage(region, imageID[region]);
@@ -469,9 +477,13 @@ class ec2 {
                 LaunchTemplateId: LaunchTemplateID.id,
                 SourceVersion: LaunchTemplateID.version.toString()
             }, (err, data) => {
+                var _a;
                 if (err)
                     return reject(err);
-                return resolve(data);
+                const createdVersion = (_a = data.LaunchTemplateVersion) === null || _a === void 0 ? void 0 : _a.VersionNumber;
+                if (!createdVersion)
+                    return reject(new Error(`Couldn't create a new version.`));
+                return resolve(createdVersion);
             });
         });
     }
@@ -507,18 +519,20 @@ class ec2 {
     async updateInstanceImage(LaunchTemplate, ImageID) {
         try {
             for (const region in LaunchTemplate) {
-                await this.createLaunchTemplateVersion(region, Object.assign(Object.assign({}, LaunchTemplate[region]), { image: ImageID[region] }));
-                await this.modifyLaunchTemplate(region, LaunchTemplate[region]);
+                const template = LaunchTemplate[region];
+                await this.modifyLaunchTemplate(region, Object.assign(Object.assign({}, template), { version: await this.createLaunchTemplateVersion(region, Object.assign(Object.assign({}, template), { image: ImageID[region] })) }));
             }
         }
         catch (e) {
+            console.log(e);
             for (const region in LaunchTemplate) {
+                const template = LaunchTemplate[region];
                 try {
-                    await this.modifyLaunchTemplate(region, Object.assign(Object.assign({}, LaunchTemplate[region]), { version: LaunchTemplate[region].version - 1 }));
+                    await this.modifyLaunchTemplate(region, Object.assign(Object.assign({}, template), { version: template.version }));
                 }
                 catch (e) { }
                 try {
-                    await this.deleteLaunchTemplateVersions(region, LaunchTemplate[region]);
+                    await this.deleteLaunchTemplateVersions(region, template);
                 }
                 catch (e) { }
             }

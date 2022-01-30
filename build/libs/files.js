@@ -33,18 +33,20 @@ const replaceVars = async (src, dest, options) => {
                     }
                 };
                 await secureCopy();
-                fs_1.default.watchFile(fullPath, {
-                    bigint: false,
-                    persistent: true,
-                    interval: 1000,
-                }, async function (curr, prev) {
-                    await secureCopy();
-                    if (typeof (options === null || options === void 0 ? void 0 : options.watch) == 'function')
-                        options === null || options === void 0 ? void 0 : options.watch(fullPath);
-                    else {
-                        console.log(`File '${fullPath}' has changed.`);
-                    }
-                });
+                if (options === null || options === void 0 ? void 0 : options.watch) {
+                    fs_1.default.watchFile(fullPath, {
+                        bigint: false,
+                        persistent: true,
+                        interval: 1000,
+                    }, async function (curr, prev) {
+                        await secureCopy();
+                        if (typeof (options === null || options === void 0 ? void 0 : options.watch) == 'function')
+                            options === null || options === void 0 ? void 0 : options.watch(fullPath);
+                        else {
+                            console.log(`File '${fullPath}' has changed.`);
+                        }
+                    });
+                }
             }
         }
     };

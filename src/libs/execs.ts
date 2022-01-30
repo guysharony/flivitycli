@@ -29,8 +29,10 @@ export const timer = async <T>(params: Timer = {}): Promise<{ call(callback: () 
 
 		if (result) return result;
 
-		if (params.retry?.max && retries + 1 >= params.retry?.max)
+		if (params.retry?.max && retries + 1 >= params.retry.max) {
+			console.log(result);
 			throw new Error(`Failed to execute function.`);
+		}
 
 		retries++;
 

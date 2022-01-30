@@ -44,21 +44,21 @@ export const replaceVars = async (src: string, dest: string, options?: { vars: V
 
 				await secureCopy();
 
-				fs.watchFile(fullPath, {
-					bigint: false,
-					persistent: true,
-					interval: 1000,
-				},
-				async function (curr, prev) {
-					await secureCopy();
+				if (options?.watch) {
+					fs.watchFile(fullPath, {
+						bigint: false,
+						persistent: true,
+						interval: 1000,
+					},
+					async function (curr, prev) {
+						await secureCopy();
 
-					console.log(typeof options?.watch);
-
-					if (typeof options?.watch == 'function') options?.watch(fullPath);
-					else {
-						console.log(`File '${fullPath}' has changed.`);
-					}
-				});
+						if (typeof options?.watch == 'function') options?.watch(fullPath);
+						else {
+							console.log(`File '${fullPath}' has changed.`);
+						}
+					});
+				}
 			}
 		}
 	};

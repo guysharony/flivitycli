@@ -35,14 +35,16 @@ exports.sleep = sleep;
 const timer = async (params = {}) => {
     let retries = 0;
     const timerBase = async (callback) => {
-        var _a, _b, _c;
+        var _a, _b;
         if ((_a = params.retry) === null || _a === void 0 ? void 0 : _a.interval)
             (0, exports.sleep)(params.retry.interval);
         const result = await callback();
         if (result)
             return result;
-        if (((_b = params.retry) === null || _b === void 0 ? void 0 : _b.max) && retries + 1 >= ((_c = params.retry) === null || _c === void 0 ? void 0 : _c.max))
+        if (((_b = params.retry) === null || _b === void 0 ? void 0 : _b.max) && retries + 1 >= params.retry.max) {
+            console.log(result);
             throw new Error(`Failed to execute function.`);
+        }
         retries++;
         return await timerBase(callback);
     };

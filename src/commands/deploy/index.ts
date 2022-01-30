@@ -22,8 +22,6 @@ export const description = 'Deploy project to AWS.';
 export const action = async (params: Command) => {
 	const currentOptions = params.opts();
 
-	const requiredServers = [ 'website' ];
-
 	const zones = flivity.amazon.zones;
 
 	const server_images: { [x: string]: string[] } = {};
@@ -40,11 +38,9 @@ export const action = async (params: Command) => {
 		execs.display('=> Creating configurations.', true);
 		server_configuration[zone] = {
 			production: await builder(server_target, 'production', {
-				servers: requiredServers,
 				outputSubdir: path.join('production', zone)
 			}),
 			deploy: await builder(server_target, 'deploy', {
-				servers: requiredServers,
 				outputSubdir: path.join('deploy', zone)
 			})
 		};
@@ -57,6 +53,7 @@ export const action = async (params: Command) => {
 		server_production_launch_templates[zone] = await flivity.amazon.ec2.getLaunchTemplateID(zone, 'Flivity-Website');
 	}
 
+
 	execs.display('\nBuilding images.');
 	for (const zone in zones) {
 		server_images[zone] = [];
@@ -65,8 +62,9 @@ export const action = async (params: Command) => {
 
 		const configuration = server_configuration[zone].production;
 
-		for (const server_name in configuration.servers) {
-			const services = configuration.servers[server_name].compose.services;
+		for (const server of configuration.servers) {
+			const server_name = server.name;
+			const services = server.compose.services;
 
 			for (const service_name in services) {
 				execs.display(`[${server_name}] => Building '${service_name}'.`, true);
@@ -110,8 +108,9 @@ export const action = async (params: Command) => {
 	}
 
 	execs.display('\nBuilding instance image.');
-	const latestTemplateVersion = server_production_launch_templates['us-west-2'].version + 1;
-	const ImageID = await flivity.amazon.ec2.createInstanceImage(server_builder_launch_templates, `flivity-website-image-v${latestTemplateVersion.toString()}`);
+	const launchTemplateVersion = server_production_launch_templates['us-west-2'].version + 1;
+
+	const ImageID = await flivity.amazon.ec2.createInstanceImage(server_builder_launch_templates, `flivity-website-image-v${launchTemplateVersion.toString()}`);
 
 	execs.display('\nDeploying new image.');
 	await flivity.amazon.ec2.updateInstanceImage(server_production_launch_templates, ImageID);
