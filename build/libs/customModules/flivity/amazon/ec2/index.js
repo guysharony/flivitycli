@@ -284,7 +284,7 @@ class ec2 {
     }
     async waitForInstanceAvailable(keyPair, DNSName) {
         const asyncFct = await execs.timer({
-            delay: 300000,
+            delay: 600000,
             retry: {
                 interval: 30000,
                 max: 10
