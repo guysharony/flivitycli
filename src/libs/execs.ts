@@ -25,13 +25,20 @@ export const timer = async <T>(params: Timer = {}): Promise<{ call(callback: () 
 	const timerBase = async (callback: () => T): Promise<Awaited<T>> => {
 		if (params.retry?.interval) sleep(params.retry.interval);
 
-		const result = await callback();
+		let data = null;
+		let error: string | null = null;
 
-		if (result) return result;
+		try {
+			data = await callback();
+		} catch (e) {
+			error = e instanceof Error ? e.message : <string>e;
+			data = null;
+		}
+
+		if (data) return data;
 
 		if (params.retry?.max && retries + 1 >= params.retry.max) {
-			console.log(result);
-			throw new Error(`Failed to execute function.`);
+			throw new Error(`[${retries}]: ${error || 'Failed to create instance.'}`);
 		}
 
 		retries++;

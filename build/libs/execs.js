@@ -38,12 +38,19 @@ const timer = async (params = {}) => {
         var _a, _b;
         if ((_a = params.retry) === null || _a === void 0 ? void 0 : _a.interval)
             (0, exports.sleep)(params.retry.interval);
-        const result = await callback();
-        if (result)
-            return result;
+        let data = null;
+        let error = null;
+        try {
+            data = await callback();
+        }
+        catch (e) {
+            error = e instanceof Error ? e.message : e;
+            data = null;
+        }
+        if (data)
+            return data;
         if (((_b = params.retry) === null || _b === void 0 ? void 0 : _b.max) && retries + 1 >= params.retry.max) {
-            console.log(result);
-            throw new Error(`Failed to execute function.`);
+            throw new Error(`[${retries}]: ${error || 'Failed to create instance.'}`);
         }
         retries++;
         return await timerBase(callback);
