@@ -4,8 +4,6 @@ import { Command } from 'commander';
 import builder from '../../libs/builder';
 import { CommandOptions } from '../../libs/commands';
 import * as execs from '../../libs/execs';
-import * as flivity from '../../libs/customModules/flivity';
-import * as project from '../../libs/project';
 
 
 export const name = 'run';
