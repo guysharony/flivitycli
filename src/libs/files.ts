@@ -12,7 +12,7 @@ interface Vars {
 
 export const readFile = util.promisify(fs.readFile);
 
-export const replaceVars = async (src: string, dest: string, options?: { vars: Vars, watch: boolean | ((path: string) => void) }) => {
+export const replaceVars = async (src: string, dest: string, options?: { init: boolean, vars: Vars, watch: boolean | ((path: string) => void) }) => {
 	const manage = async (baseDir: string) => {
 		const baseDirStat = fs.lstatSync(baseDir);
 
@@ -43,7 +43,9 @@ export const replaceVars = async (src: string, dest: string, options?: { vars: V
 		}
 	};
 
-	await manage(src);
+	if (!options || options.init) {
+		await manage(src);
+	}
 
 	if (options?.watch) {
 		const watchSource = (sourceDir: string) => {
