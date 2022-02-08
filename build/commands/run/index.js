@@ -36,6 +36,10 @@ exports.options = [
     {
         flags: '-c, --config <path to file>',
         description: 'define configurations for a test profile'
+    },
+    {
+        flags: '-r, --recreate',
+        description: 'recreate the project'
     }
 ];
 exports.description = 'Run project for testing purpose.';
@@ -51,12 +55,16 @@ const action = async (params) => {
     });
     await execs.sleep(1000);
     execs.display('=> Cleaning old data.'.blue);
-    execs.execute('docker system prune -a --volumes');
+    if (currentOptions.recreate) {
+        execs.execute('docker system prune -a --volumes');
+    }
     execs.display('\nStarting project.');
     for (const server of result.servers) {
         execs.display(`=> Starting '${server.name}'.`.blue);
         const server_path = path_1.default.join(result.output.absolute, server.name, server.file);
-        execs.execute(`docker-compose -f ${server_path} down -v`);
+        if (currentOptions.recreate) {
+            execs.execute(`docker-compose -f ${server_path} down -v`);
+        }
         execs.execute(`docker-compose -f ${server_path} up --detach`);
     }
     execs.display('\nProject started successfully.');
