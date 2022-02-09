@@ -118,8 +118,10 @@ class ec2 {
 				const instances = data.Instances;
 				if (!(instances
 					&& instances.length == 1
-					&& instances[0].InstanceId))
+					&& instances[0].InstanceId)) {
+					console.log('test 1: ', instances);
 					return reject(new Error(`Failed to create instance.`));
+				}
 
 				return resolve(instances[0].InstanceId);
 			});
@@ -137,8 +139,10 @@ class ec2 {
 				const reservations = data.Reservations;
 				if (!(reservations
 					&& reservations.length == 1
-					&& reservations[0].Instances?.length))
+					&& reservations[0].Instances?.length)) {
+					console.log('test 2: ', reservations);
 					return reject(new Error(`Failed to create instance.`));
+				}
 
 				return resolve(reservations[0].Instances[0]);
 			});

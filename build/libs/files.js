@@ -33,7 +33,9 @@ const replaceVars = async (src, dest, options) => {
             }
         }
     };
-    await manage(src);
+    if (!options || options.init) {
+        await manage(src);
+    }
     if (options === null || options === void 0 ? void 0 : options.watch) {
         const watchSource = (sourceDir) => {
             const displayCreatedTree = async (displayDir) => {

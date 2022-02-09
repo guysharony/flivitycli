@@ -107,6 +107,7 @@ const load = async (dir) => {
                         const inputContext = path_1.default.join(compiled.input.absolute, server_source, service.build.context);
                         const outputContext = path_1.default.join(compiled.output.absolute, server_name, service.build.context);
                         await files.replaceVars(inputContext, outputContext, {
+                            init: true,
                             vars: service_environment,
                             watch: _watch
                         });
