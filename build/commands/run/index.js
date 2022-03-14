@@ -31,20 +31,20 @@ exports.options = [
     {
         flags: '-t, --target <project directory>',
         description: 'define project directory',
-        required: true
+        defaultValue: '.'
     },
     {
         flags: '-c, --config <path to file>',
         description: 'define configurations for a test profile'
-    },
-    {
-        flags: '-r, --recreate',
-        description: 'recreate the project'
     }
 ];
 exports.description = 'Run project for testing purpose.';
 const action = async (params) => {
     const currentOptions = params.opts();
+    // Start docker
+    if (parseInt(execs.execute('docker info | echo $?'))) {
+        return execs.display('=> Please start docker.'.red);
+    }
     // Initializing
     execs.display('Initializing project.');
     execs.display('=> Creating files.'.blue);
@@ -54,18 +54,10 @@ const action = async (params) => {
         }
     });
     await execs.sleep(1000);
-    execs.display('=> Cleaning old data.'.blue);
-    if (currentOptions.recreate) {
-        execs.execute('docker system prune -a --volumes');
-    }
     execs.display('\nStarting project.');
     for (const server of result.servers) {
         execs.display(`=> Starting '${server.name}'.`.blue);
-        const server_path = path_1.default.join(result.output.absolute, server.name, server.file);
-        if (currentOptions.recreate) {
-            execs.execute(`docker-compose -f ${server_path} down -v`);
-        }
-        execs.execute(`docker-compose -f ${server_path} up --detach`);
+        execs.execute(`docker-compose -f ${path_1.default.join(result.output.absolute, server.name, server.file)} up --detach`);
     }
     execs.display('\nProject started successfully.');
 };

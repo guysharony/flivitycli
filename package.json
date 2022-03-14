@@ -8,7 +8,7 @@
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"build": "tsc",
 		"package": "pkg . --targets node17-macos-x64 --output flivitycli",
-		"create": "npm run build && npm run package"
+		"create": "npm run build && npm run package && rm -rf ~/.flivitycli && mkdir -p ~/.flivitycli && cp ./flivitycli \"$_\""
 	},
 	"keywords": [
 		"cli"
