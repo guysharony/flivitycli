@@ -55,10 +55,7 @@ class Secrets {
 
 	async find(name: string) {
 		if (!this._secrets) {
-			this._secrets = {
-				...(await this.getSecrets('database/credentials')),
-				...(await this.getSecrets('streaming/video'))
-			};
+			this._secrets = await this.getSecrets('database/credentials');
 		}
 
 		return this._secrets[name];

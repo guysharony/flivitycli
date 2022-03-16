@@ -49,7 +49,7 @@ class Secrets {
     }
     async find(name) {
         if (!this._secrets) {
-            this._secrets = Object.assign(Object.assign({}, (await this.getSecrets('database/credentials'))), (await this.getSecrets('streaming/video')));
+            this._secrets = await this.getSecrets('database/credentials');
         }
         return this._secrets[name];
     }
