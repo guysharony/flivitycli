@@ -53,12 +53,15 @@ class Secrets {
 		});
 	}
 
-	async find(key: string, name: string) {
-		if (!this._secrets) this._secrets = {};
+	async find(name: string) {
+		if (!this._secrets) {
+			this._secrets = {
+				...(await this.getSecrets('database/credentials')),
+				...(await this.getSecrets('streaming/video'))
+			};
+		}
 
-		if (!(key in this._secrets)) this._secrets[key] = await this.getSecrets(key);
-
-		return this._secrets[key][name];
+		return this._secrets[name];
 	}
 }
 

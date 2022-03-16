@@ -55,8 +55,8 @@ class Amazon {
 		return this._zones;
 	}
 
-	async secrets(name: string, secret?: string) {
-		return (await secrets.find(secret ? secret : 'database/credentials', name));
+	async secrets(name: string) {
+		return (await secrets.find(name));
 	}
 
 	async elbv2(name: string, region?: string) {

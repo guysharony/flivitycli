@@ -47,12 +47,11 @@ class Secrets {
             }
         });
     }
-    async find(key, name) {
-        if (!this._secrets)
-            this._secrets = {};
-        if (!(key in this._secrets))
-            this._secrets[key] = await this.getSecrets(key);
-        return this._secrets[key][name];
+    async find(name) {
+        if (!this._secrets) {
+            this._secrets = Object.assign(Object.assign({}, (await this.getSecrets('database/credentials'))), (await this.getSecrets('streaming/video')));
+        }
+        return this._secrets[name];
     }
 }
 exports.default = new Secrets();

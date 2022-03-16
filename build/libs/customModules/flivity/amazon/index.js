@@ -37,8 +37,8 @@ class Amazon {
     get zones() {
         return this._zones;
     }
-    async secrets(name, secret) {
-        return (await secrets_1.default.find(secret ? secret : 'database/credentials', name));
+    async secrets(name) {
+        return (await secrets_1.default.find(name));
     }
     async elbv2(name, region) {
         const elbvalue = await elbv2_1.default.find(region ? region : this.zone.region, name);
