@@ -25,8 +25,8 @@ async function app() {
     commands.name("flivitycli");
     try {
         await commands.create('run');
-        await commands.create('push-images');
-        await commands.create('push-basefiles');
+        await commands.create('images');
+        await commands.create('basefiles');
         await commands.create('deploy');
         commands.execute();
     }

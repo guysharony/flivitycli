@@ -25,6 +25,7 @@ class Amazon {
         };
         const region = 'AWS_DEFAULT_REGION' in process.env && process.env.AWS_DEFAULT_REGION && process.env.AWS_DEFAULT_REGION in this._zones ? process.env.AWS_DEFAULT_REGION : 'us-west-2';
         this._zone = Object.assign({ region }, (this._zones[region]));
+        this.elbv2 = this.elbv2.bind(this);
     }
     get zone() {
         return this._zone;

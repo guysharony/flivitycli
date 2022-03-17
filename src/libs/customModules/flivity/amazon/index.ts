@@ -35,6 +35,8 @@ class Amazon {
 			region,
 			...(this._zones[region])
 		};
+
+		this.elbv2 = this.elbv2.bind(this);
 	}
 
 	get zone() {

@@ -54,7 +54,7 @@ class s3 {
 
 			await this.putObject(region, {
 				Bucket,
-				Key: source_file_destination,
+				Key: source_file_destination.startsWith('/') ? source_file_destination.substring(1) : source_file_destination,
 				Body: await fs.readFile(source_file_absolute)
 			});
 		}

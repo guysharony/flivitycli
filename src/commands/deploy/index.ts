@@ -13,7 +13,7 @@ export const options: CommandOptions = [
 	{
 		flags: '-t, --target <project directory>',
 		description: 'define project directory',
-		required: true
+		defaultValue: '.'
 	}
 ];
 

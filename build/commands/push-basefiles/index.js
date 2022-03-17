@@ -32,7 +32,7 @@ exports.options = [
     {
         flags: '-t, --target <project directory>',
         description: 'define project directory',
-        required: true
+        defaultValue: '.'
     }
 ];
 exports.description = 'Base files to Amazon S3.';
@@ -56,6 +56,7 @@ const action = async (params) => {
         flivity.amazon.region = region_name;
         const region_bucket = `flivity-ec2-${flivity.amazon.zone.city}`;
         const region_files = server_configuration[region_name].output.absolute;
+        console.log(region_files);
         execs.display(`[${region_bucket}] => Uploading '${region_files}'.`, true);
         await flivity.amazon.s3.upload(region_name, region_bucket, region_files);
     }

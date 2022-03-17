@@ -32,7 +32,7 @@ exports.options = [
     {
         flags: '-t, --target <project directory>',
         description: 'define project directory',
-        required: true
+        defaultValue: '.'
     },
     {
         flags: '-i, --images <images to deploy>',
