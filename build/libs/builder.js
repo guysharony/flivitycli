@@ -22,6 +22,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = __importDefault(require("crypto"));
 const customModules_1 = __importDefault(require("./customModules"));
 const project = __importStar(require("./project"));
 const flivity = __importStar(require("./customModules/flivity"));
@@ -54,6 +55,9 @@ async function default_1(target, mode, options) {
                 },
                 amazon: {
                     zone: flivity.amazon.zone
+                },
+                service_worker: {
+                    version: crypto_1.default.randomBytes(8).toString('hex')
                 }
             }
         });
