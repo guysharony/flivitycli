@@ -35,6 +35,8 @@ export const action = async (params: Command) => {
 	const required_images: string[] | null = currentOptions.images == '*' ? null : currentOptions.images.split(',');
 
 	execs.display('Creating build.');
+
+	const sw_version = Date.now().toString(16);
 	for (const zone in zones) {
 		flivity.amazon.region = zone;
 
@@ -44,7 +46,7 @@ export const action = async (params: Command) => {
 		server_configuration[zone] = await builder(server_target, 'production', {
 			outputSubdir: path.join(zone),
 			service_worker: {
-				version: Date.now().toString(16)
+				version: sw_version
 			}
 		});
 

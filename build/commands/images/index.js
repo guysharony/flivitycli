@@ -48,6 +48,7 @@ const action = async (params) => {
     const server_configuration = {};
     const required_images = currentOptions.images == '*' ? null : currentOptions.images.split(',');
     execs.display('Creating build.');
+    const sw_version = Date.now().toString(16);
     for (const zone in zones) {
         flivity.amazon.region = zone;
         const server_target = path_1.default.join(process.cwd(), currentOptions.target);
@@ -55,7 +56,7 @@ const action = async (params) => {
         server_configuration[zone] = await (0, builder_1.default)(server_target, 'production', {
             outputSubdir: path_1.default.join(zone),
             service_worker: {
-                version: Date.now().toString(16)
+                version: sw_version
             }
         });
         execs.display('=> Authenticating to Elastic Container Registry.', true);
