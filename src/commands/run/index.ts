@@ -38,6 +38,9 @@ export const action = async (params: Command) => {
 	const result = await builder(path.join(process.cwd(), currentOptions.target), 'development', {
 		watch: (path: string) => {
 			execs.display(`=> File '${path}' has been changed.`);
+		},
+		service_worker: {
+			version: Date.now().toString(16)
 		}
 	});
 

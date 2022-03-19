@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import customModules from './customModules';
 import * as project from './project';
 import * as flivity from './customModules/flivity';
@@ -8,6 +7,9 @@ import { ServerModes } from './customModules/flivity/server';
 interface Options {
 	outputSubdir?: string;
 	watch?: boolean | ((path: string) => void);
+	service_worker?: {
+		version: string;
+	};
 }
 
 export default async function (target: string, mode: ServerModes, options?: Options) {
@@ -43,9 +45,7 @@ export default async function (target: string, mode: ServerModes, options?: Opti
 				amazon: {
 					zone: flivity.amazon.zone
 				},
-				service_worker: {
-					version: crypto.randomBytes(8).toString('hex')
-				}
+				service_worker: options?.service_worker
 			}
 		});
 	} catch (e) {

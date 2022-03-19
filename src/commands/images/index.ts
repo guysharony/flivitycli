@@ -1,4 +1,5 @@
 import path from 'path';
+import crypto from 'crypto';
 import { Command } from 'commander';
 
 import builder from '../../libs/builder';
@@ -41,7 +42,10 @@ export const action = async (params: Command) => {
 
 		execs.display('=> Creating configurations.', true);
 		server_configuration[zone] = await builder(server_target, 'production', {
-			outputSubdir: path.join(zone)
+			outputSubdir: path.join(zone),
+			service_worker: {
+				version: Date.now().toString(16)
+			}
 		});
 
 		execs.display('=> Authenticating to Elastic Container Registry.', true);

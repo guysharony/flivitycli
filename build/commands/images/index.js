@@ -53,7 +53,10 @@ const action = async (params) => {
         const server_target = path_1.default.join(process.cwd(), currentOptions.target);
         execs.display('=> Creating configurations.', true);
         server_configuration[zone] = await (0, builder_1.default)(server_target, 'production', {
-            outputSubdir: path_1.default.join(zone)
+            outputSubdir: path_1.default.join(zone),
+            service_worker: {
+                version: Date.now().toString(16)
+            }
         });
         execs.display('=> Authenticating to Elastic Container Registry.', true);
         execs.execute(`aws ecr get-login-password --region ${zone} | docker login --username AWS --password-stdin 765769819972.dkr.ecr.${zone}.amazonaws.com`);

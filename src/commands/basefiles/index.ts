@@ -38,7 +38,10 @@ export const action = async (params: Command) => {
 
 		execs.display('=> Creating configurations.', true);
 		server_configuration[zone] = await builder(server_target, 'deploy', {
-			outputSubdir: path.join('deploy', zone)
+			outputSubdir: path.join('deploy', zone),
+			service_worker: {
+				version: Date.now().toString(16)
+			}
 		});
 
 		execs.display('=> Authenticating to Elastic Container Registry.', true);

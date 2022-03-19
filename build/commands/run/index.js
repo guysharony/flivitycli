@@ -51,6 +51,9 @@ const action = async (params) => {
     const result = await (0, builder_1.default)(path_1.default.join(process.cwd(), currentOptions.target), 'development', {
         watch: (path) => {
             execs.display(`=> File '${path}' has been changed.`);
+        },
+        service_worker: {
+            version: Date.now().toString(16)
         }
     });
     await execs.sleep(1000);
