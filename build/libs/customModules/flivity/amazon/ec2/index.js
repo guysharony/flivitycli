@@ -286,9 +286,9 @@ class ec2 {
     }
     async waitForInstanceAvailable(keyPair, DNSName) {
         const asyncFct = await execs.timer({
-            delay: 300000,
+            delay: 600000,
             retry: {
-                interval: 30000,
+                interval: 60000,
                 max: 10
             }
         });
@@ -340,7 +340,7 @@ class ec2 {
                 }
                 catch (e) { }
             }
-            throw new Error('Failed creating instance.');
+            throw new Error('Failed creating instance 1.');
         }
         // Waiting for instances
         try {
@@ -358,7 +358,7 @@ class ec2 {
                 }
                 catch (e) { }
             }
-            throw new Error('Failed creating instance.');
+            throw new Error('Failed creating instance 2.');
         }
         // Creating images
         const imageID = {};
@@ -390,6 +390,7 @@ class ec2 {
             await this.waitForImageAvailable(imageID);
         }
         catch (e) {
+            console.log(e);
             for (const region in launchTemplates) {
                 try {
                     await this.deleteImage(region, imageID[region]);

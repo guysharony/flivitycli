@@ -38,7 +38,7 @@ export const action = async (params: Command) => {
 	}
 
 	execs.display('\nBuilding instance image.');
-	const launchTemplateVersion = server_production_launch_templates['us-west-2'].version + 1;
+	const launchTemplateVersion = server_production_launch_templates['us-west-2'].version;
 
 	const ImageID = await flivity.amazon.ec2.createInstanceImage(server_builder_launch_templates, `flivity-website-image-v${launchTemplateVersion.toString()}`);
 

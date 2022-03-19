@@ -319,9 +319,9 @@ class ec2 {
 
 	async waitForInstanceAvailable(keyPair: { [x: string]: KeyPair; }, DNSName: { [x: string]: string; }) {
 		const asyncFct = await execs.timer({
-			delay: 300000,
+			delay: 600000,
 			retry: {
-				interval: 30000,
+				interval: 60000,
 				max: 10
 			}
 		});
@@ -376,7 +376,7 @@ class ec2 {
 				try { await (keyPairs[region].delete()); } catch(e) {}
 			}
 
-			throw new Error('Failed creating instance.');
+			throw new Error('Failed creating instance 1.');
 		}
 
 
@@ -391,7 +391,7 @@ class ec2 {
 				try { await (keyPairs[region].delete()); } catch(e) {}
 			}
 
-			throw new Error('Failed creating instance.');
+			throw new Error('Failed creating instance 2.');
 		}
 
 
@@ -419,6 +419,8 @@ class ec2 {
 		try {
 			await this.waitForImageAvailable(imageID);
 		} catch (e) {
+			console.log(e);
+
 			for (const region in launchTemplates) {
 				try { await this.deleteImage(region, imageID[region]); } catch(e) {}
 				try { await this.deleteInstance(region, instanceID[region]); } catch(e) {}
@@ -592,12 +594,15 @@ class ec2 {
 						version: template.version
 					});
 				} catch (e) {}
-				try { await this.deleteLaunchTemplateVersions(region, template); } catch(e) {}
+
+				try {
+					await this.deleteLaunchTemplateVersions(region, template);
+				} catch(e) {}
 			}
 		}
 
 		for (const region in LaunchTemplate) {
-			await this.startInstanceRefresh(region, 'Flivity-Website');
+			await this.startInstanceRefresh(region, 'website');
 		}
 	}
 }

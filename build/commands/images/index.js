@@ -38,6 +38,10 @@ exports.options = [
         flags: '-i, --images <images to deploy>',
         description: 'define images to deploy',
         defaultValue: '*'
+    },
+    {
+        flags: '-p, --push',
+        description: 'Push files to Amazon'
     }
 ];
 exports.description = 'Push images to Amazon ECR.';
@@ -86,13 +90,15 @@ const action = async (params) => {
             }
         }
     }
-    execs.display('\nUploading images to Elastic Container Registry.');
-    for (const region_name in server_images) {
-        flivity.amazon.region = region_name;
-        for (const server_image of server_images[region_name]) {
-            execs.display(`=> Uploading '${server_image}'.`, true);
-            execs.execute(`docker push ${server_image}:latest`);
-            execs.execute(`docker image rm ${server_image}`);
+    if (currentOptions.push) {
+        execs.display('\nUploading images to Elastic Container Registry.');
+        for (const region_name in server_images) {
+            flivity.amazon.region = region_name;
+            for (const server_image of server_images[region_name]) {
+                execs.display(`=> Uploading '${server_image}'.`, true);
+                execs.execute(`docker push ${server_image}:latest`);
+                execs.execute(`docker image rm ${server_image}`);
+            }
         }
     }
 };
